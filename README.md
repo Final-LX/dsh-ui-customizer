@@ -27,28 +27,25 @@
 
 ## 安装
 
-一键脚本：
-
 ```powershell
-.\install.ps1
+dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
 ```
 
-或手动三步：
+然后在 `~\.dsh\profiles\web\cordis.patch.yml` 里登记 loader 行，并重启：
+
+```yaml
+- insert:
+    - id: ui-customizer
+      name: dsh-ui-customizer
+```
 
 ```powershell
-# 1. 装进 web profile
-dsh plugin --profile web add "file:C:/path/to/dsh-ui-customizer"
-
-# 2. 编辑 ~\.dsh\profiles\web\cordis.patch.yml，把空数组改成：
-#    - insert:
-#        - id: ui-customizer
-#          name: dsh-ui-customizer
-
-# 3. 重启
 npx @deepseek-ai/dsh web
 ```
 
-> `dsh` 不在 PATH 时，用 `npx @deepseek-ai/dsh plugin --profile web add ...` 代替。
+> 本地源码安装/开发：克隆本仓库后，在目录里运行 `.\install.ps1` 一键安装，或
+> `dsh plugin --profile web add "file:C:/path/to/dsh-ui-customizer"` + 手动登记上面那行。
+> `dsh` 不在 PATH 时用 `npx @deepseek-ai/dsh plugin --profile web add ...` 代替。
 > pnpm 对 `file:` 依赖默认是**拷贝**（非符号链接），改源码后需重新 `add` 刷新安装副本。
 
 ## 使用
@@ -87,29 +84,6 @@ npm run wallpaper -- "C:\path\to\image.png"
 
 图片会被压成 1920px JPEG，写入 `assets/wallpaper.txt` 并内嵌进 `lib/client.js`，
 然后重新 `add` + 重启。若只改了壁纸文件想重新内嵌：`node tools/inject-wallpaper.cjs`。
-
-## 发布
-
-本包 `private: true` 防止误发布。想发布时：
-
-1. **git 仓库**（最简单，可回退）：
-   ```powershell
-   git init && git add . && git commit -m "dsh-ui-customizer"
-   git remote add origin <你的仓库地址>
-   git push -u origin main
-   ```
-   别人安装：`dsh plugin --profile web add "git+<仓库地址>"`
-
-2. **npm 公开/私有**：
-   - 删掉 `package.json` 里的 `"private": true`
-   - 如 `dsh-ui-customizer` 已被占用，改成 scoped 名（同步改 4 处 id，见下）
-   - `npm publish`（或 `npm publish --registry <私有源>`）
-
-### 重命名（如需 scoped）
-
-包名在 4 处出现，需保持一致：`package.json` 的 `name`、`lib/client.js` 里的
-`window.__ModuleLoader__.load({ id })` 和 `data-plugin`/`overrideTokens` 的 source、
-以及 `cordis.patch.yml` 的 `name`（安装脚本写的是 `dsh-ui-customizer`）。
 
 ## 关键契约（跨 DSH 版本升级时核对）
 
