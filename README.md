@@ -14,15 +14,8 @@
 
 ## 截图
 
-<!--
-  📷 截图说明：把截图上传到 docs/ 目录，命名为下面的文件名（PNG 或 JPG）即可显示。
-  建议宽度 1200px 左右。
--->
-
-<!-- 📷 截图位 1：应用某个主题模板后的整体界面（含侧栏 + 对话区）。文件：docs/screenshot-overview.png -->
 ![整体效果](docs/screenshot-overview.png)
 
-<!-- 📷 截图位 2：设置 → DIY 主题 面板（含配色/字体/背景/组件分组）。文件：docs/screenshot-panel.png -->
 ![DIY 主题设置面板](docs/screenshot-panel.png)
 
 ## 安装
