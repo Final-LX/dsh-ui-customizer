@@ -1,18 +1,51 @@
 # dsh-ui-customizer
 
-一个用于 `dsh web` 的全方面 DIY 主题插件。不改任何源码，装进 web profile 即可，在
-**设置 → DIY 主题** 里实时调整配色、字体、背景、圆角，配置持久化到浏览器 localStorage。
+一个用于 [`dsh web`](https://github.com/deepseek-ai/deepseek-harness) 的全方面 DIY 主题插件。
+不改任何源码，装进 web profile 后，在 **设置 → DIY 主题** 里实时调整配色、字体、背景、圆角，
+配置持久化到浏览器 localStorage。
 
-## 功能
+## 特性
 
-| 分组 | 内容 |
-|---|---|
-| 🎨 配色 | 8 套主题模板 + 品牌/强调/成功/警告/错误 5 个取色器（从 5 色派生 ~37 个语义 token） |
-| 🔤 字体 | 界面字体 + 代码字体（下拉）+ 整体缩放 80–140% |
-| 🖼 背景 | 内置壁纸 / 上传图片（前端压到 1920px JPEG）/ URL / 面板通透度 / 毛玻璃 |
-| 🧩 组件 | 圆角 0–24px |
+- 🎨 **配色**：8 套主题模板 + 品牌/强调/成功/警告/错误 5 个取色器，从 5 色派生约 37 个语义 token
+- 🔤 **字体**：界面字体 + 代码字体（下拉选择）+ 整体缩放 80–140%
+- 🖼 **背景**：内置壁纸 / 上传图片（前端压缩到 1920px JPEG）/ 图片 URL / 面板通透度 / 毛玻璃
+- 🧩 **组件**：圆角 0–24px
+- 👓 **可读性**：覆盖层（对话框/菜单/输入/提示）固定高不透明，通透度只作用于环境背景，文字始终清晰
 
-可读性保证：覆盖层（对话框/菜单/输入/提示）固定高不透明，通透度只作用于环境背景。
+## 截图
+
+<!--
+  📷 截图说明：
+  把截图上传到本仓库的 docs/ 目录，命名为下面的文件名（PNG 或 JPG），即可在 README 中显示。
+  建议宽度 1200px 左右，避免过大。若使用其他文件名，替换对应路径即可。
+-->
+
+### 整体效果
+
+<!-- 📷 截图位 1：应用某个主题模板后的整体界面（含侧栏 + 对话区）。文件：docs/screenshot-overview.png -->
+![整体效果](docs/screenshot-overview.png)
+
+<!-- 📷 截图位 2（可选）：再放一张其他配色模板的对比图。文件：docs/screenshot-overview-2.png -->
+![另一种配色模板](docs/screenshot-overview-2.png)
+
+### 设置入口
+
+<!-- 📷 截图位 3：设置面板左侧导航，高亮「DIY 主题」这一项。文件：docs/screenshot-entry.png -->
+![设置入口：设置 → DIY 主题](docs/screenshot-entry.png)
+
+### 各面板
+
+<!-- 📷 截图位 4：配色面板（主题模板下拉 + 5 个取色器，含 hex 值）。文件：docs/screenshot-palette.png -->
+![配色面板](docs/screenshot-palette.png)
+
+<!-- 📷 截图位 5：字体面板（界面字体/代码字体下拉 + 整体缩放滑杆）。文件：docs/screenshot-typography.png -->
+![字体面板](docs/screenshot-typography.png)
+
+<!-- 📷 截图位 6：背景面板（内置壁纸/上传/URL/通透度/毛玻璃）。文件：docs/screenshot-background.png -->
+![背景面板](docs/screenshot-background.png)
+
+<!-- 📷 截图位 7：组件面板（圆角滑杆）。文件：docs/screenshot-components.png -->
+![组件面板](docs/screenshot-components.png)
 
 ## 安装
 
@@ -40,6 +73,25 @@ npx @deepseek-ai/dsh web
 > `dsh` 不在 PATH 时，用 `npx @deepseek-ai/dsh plugin --profile web add ...` 代替。
 > pnpm 对 `file:` 依赖默认是**拷贝**（非符号链接），改源码后需重新 `add` 刷新安装副本。
 
+## 使用
+
+打开 Web GUI → 右上角 **设置** → 左侧导航 **DIY 主题**，即可按分组调整：
+
+| 分组 | 控件 | 说明 |
+|---|---|---|
+| 🎨 配色 | 主题模板 | 一键套用整套配色（品牌/强调/语义） |
+| | 品牌/强调/成功/警告/错误 | 5 个取色器，带 hex 值显示 |
+| 🔤 字体 | 界面字体 / 代码字体 | 下拉选择预设字体栈 |
+| | 整体缩放 | 80–140%，整体放大缩小界面 |
+| 🖼 背景 | 使用内置壁纸 | 开关内嵌壁纸 |
+| | 上传背景图 | 选本地图片，前端压缩后应用 |
+| | 背景 URL | 填网络图或 data URI |
+| | 面板通透度 | 0–100%，越小背景越清楚 |
+| | 毛玻璃强度 | 0–30px，0 为关闭模糊（最省性能） |
+| 🧩 组件 | 圆角 | 0–24px，作用于按钮/输入/对话框等 |
+
+改动实时生效并写入 localStorage（`dsh-ui-customizer:config:v3`），刷新后保留。
+
 ## 测试
 
 ```powershell
@@ -53,7 +105,6 @@ node tools/test-render.cjs   # 真实 React 渲染测试
 
 ```powershell
 npm run wallpaper -- "C:\path\to\image.png"
-# 等价于 node tools/set-wallpaper.cjs <图片>
 ```
 
 图片会被压成 1920px JPEG，写入 `assets/wallpaper.txt` 并内嵌进 `lib/client.js`，
@@ -63,7 +114,7 @@ npm run wallpaper -- "C:\path\to\image.png"
 
 本包 `private: true` 防止误发布。想发布时：
 
-1. **git 仓库**（最省事，可回退）：
+1. **git 仓库**（最简单，可回退）：
    ```powershell
    git init && git add . && git commit -m "dsh-ui-customizer"
    git remote add origin <你的仓库地址>
@@ -73,9 +124,8 @@ npm run wallpaper -- "C:\path\to\image.png"
 
 2. **npm 公开/私有**：
    - 删掉 `package.json` 里的 `"private": true`
-   - 如 `dsh-ui-customizer` 已被占用，改成 scoped 名（同步改 3 处 id，见下）
+   - 如 `dsh-ui-customizer` 已被占用，改成 scoped 名（同步改 4 处 id，见下）
    - `npm publish`（或 `npm publish --registry <私有源>`）
-   别人安装：`dsh plugin --profile web add <包名>`
 
 ### 重命名（如需 scoped）
 
@@ -96,6 +146,7 @@ npm run wallpaper -- "C:\path\to\image.png"
 dsh-ui-customizer/
 ├── package.json          # exports["./client"] + dsh.client + peerDeps + scripts
 ├── install.ps1           # 一键安装
+├── docs/                 # 截图（README 引用）
 ├── assets/wallpaper.txt  # 壁纸 data URI（set-wallpaper.cjs 生成）
 ├── tools/
 │   ├── set-wallpaper.cjs    # 换壁纸（压缩 + 内嵌）
