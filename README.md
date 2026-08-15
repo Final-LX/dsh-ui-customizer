@@ -15,37 +15,15 @@
 ## 截图
 
 <!--
-  📷 截图说明：
-  把截图上传到本仓库的 docs/ 目录，命名为下面的文件名（PNG 或 JPG），即可在 README 中显示。
-  建议宽度 1200px 左右，避免过大。若使用其他文件名，替换对应路径即可。
+  📷 截图说明：把截图上传到 docs/ 目录，命名为下面的文件名（PNG 或 JPG）即可显示。
+  建议宽度 1200px 左右。
 -->
-
-### 整体效果
 
 <!-- 📷 截图位 1：应用某个主题模板后的整体界面（含侧栏 + 对话区）。文件：docs/screenshot-overview.png -->
 ![整体效果](docs/screenshot-overview.png)
 
-<!-- 📷 截图位 2（可选）：再放一张其他配色模板的对比图。文件：docs/screenshot-overview-2.png -->
-![另一种配色模板](docs/screenshot-overview-2.png)
-
-### 设置入口
-
-<!-- 📷 截图位 3：设置面板左侧导航，高亮「DIY 主题」这一项。文件：docs/screenshot-entry.png -->
-![设置入口：设置 → DIY 主题](docs/screenshot-entry.png)
-
-### 各面板
-
-<!-- 📷 截图位 4：配色面板（主题模板下拉 + 5 个取色器，含 hex 值）。文件：docs/screenshot-palette.png -->
-![配色面板](docs/screenshot-palette.png)
-
-<!-- 📷 截图位 5：字体面板（界面字体/代码字体下拉 + 整体缩放滑杆）。文件：docs/screenshot-typography.png -->
-![字体面板](docs/screenshot-typography.png)
-
-<!-- 📷 截图位 6：背景面板（内置壁纸/上传/URL/通透度/毛玻璃）。文件：docs/screenshot-background.png -->
-![背景面板](docs/screenshot-background.png)
-
-<!-- 📷 截图位 7：组件面板（圆角滑杆）。文件：docs/screenshot-components.png -->
-![组件面板](docs/screenshot-components.png)
+<!-- 📷 截图位 2：设置 → DIY 主题 面板（含配色/字体/背景/组件分组）。文件：docs/screenshot-panel.png -->
+![DIY 主题设置面板](docs/screenshot-panel.png)
 
 ## 安装
 
