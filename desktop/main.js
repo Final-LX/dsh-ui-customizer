@@ -4,7 +4,7 @@
 //   → 首次引导（确保 profile 存在 + 插件已装 + loader 已登记）
 //   → 固定端口起 `dsh web` → 解析就绪地址 → 开窗口
 //   → 日志落盘 + 崩溃恢复 + 托盘。
-const { app, BrowserWindow, Tray, Menu, nativeImage, dialog, shell } = require("electron");
+const { app, BrowserWindow, Tray, Menu, nativeImage, dialog, shell, ipcMain } = require("electron");
 const { spawn, spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
@@ -235,13 +235,9 @@ function createWindow() {
     minHeight: 640,
     backgroundColor: "#111318",
     title: "DSH",
-    frame: false,                       // 去掉系统默认标题栏
-    titleBarOverlay: {                  // 右上角悬浮原生窗口控制按钮（最小化/最大化/关闭）
-      color: "#111318",
-      symbolColor: "#c9ced6",
-      height: 36
-    },
+    frame: false,                       // 去掉系统默认标题栏，改自定义标题栏
     webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -249,20 +245,45 @@ function createWindow() {
     }
   });
   win.loadURL(webUrl);
-  // 顶部左侧留一条可拖拽区域；右侧 138px 让给原生窗口控制按钮，不遮 DSH 自己的右上角按钮
+  // 注入自定义标题栏：顶部 32px 可拖拽，右上角三个自绘按钮；把 DSH 内容下移让位
   win.webContents.on("dom-ready", () => {
     try {
       win.webContents.insertCSS(`
-        html::before {
-          content: "";
-          position: fixed;
-          top: 0; left: 0;
-          width: calc(100% - 138px);
-          height: 36px;
-          -webkit-app-region: drag;
-          z-index: 2147483647;
+        #__ds_titlebar {
+          position: fixed; top: 0; left: 0; right: 0; height: 32px;
+          display: flex; align-items: center; justify-content: space-between;
+          background: #111318; color: #c9ced6;
+          -webkit-app-region: drag; z-index: 2147483647;
+          font-family: system-ui, "Segoe UI", sans-serif; font-size: 12px;
+          padding: 0 6px 0 10px; box-sizing: border-box; user-select: none;
         }
+        #__ds_titlebar .__ds_title { opacity: .65; letter-spacing: .5px; }
+        #__ds_titlebar .__ds_btns { display: flex; gap: 2px; -webkit-app-region: no-drag; }
+        #__ds_titlebar button {
+          width: 40px; height: 26px; border: none; background: transparent; color: #c9ced6;
+          cursor: pointer; font-size: 12px; line-height: 1; border-radius: 4px;
+          display: flex; align-items: center; justify-content: center;
+        }
+        #__ds_titlebar button:hover { background: rgba(255,255,255,.12); }
+        #__ds_titlebar #__ds_close:hover { background: #e81123; color: #fff; }
+        #root { height: calc(100vh - 32px) !important; margin-top: 32px !important; }
       `);
+      win.webContents.executeJavaScript(`
+        (function () {
+          if (document.getElementById("__ds_titlebar")) return;
+          var bar = document.createElement("div");
+          bar.id = "__ds_titlebar";
+          bar.innerHTML = '<span class="__ds_title">DSH</span><span class="__ds_btns">'
+            + '<button id="__ds_min" title="最小化">─</button>'
+            + '<button id="__ds_max" title="最大化/还原">□</button>'
+            + '<button id="__ds_close" title="关闭">×</button>'
+            + '</span>';
+          document.body.prepend(bar);
+          document.getElementById("__ds_min").addEventListener("click", function () { window.dshWin.minimize(); });
+          document.getElementById("__ds_max").addEventListener("click", function () { window.dshWin.toggleMaximize(); });
+          document.getElementById("__ds_close").addEventListener("click", function () { window.dshWin.close(); });
+        })();
+      `).catch(() => {});
     } catch (e) {}
   });
   win.on("close", (e) => {
@@ -311,6 +332,11 @@ if (!gotLock) {
   app.on("second-instance", () => {
     if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); }
   });
+
+  // 自定义标题栏按钮的窗口控制
+  ipcMain.on("win:minimize", () => { if (win) win.minimize(); });
+  ipcMain.on("win:toggle-maximize", () => { if (!win) return; if (win.isMaximized()) win.unmaximize(); else win.maximize(); });
+  ipcMain.on("win:close", () => { if (win) win.close(); });
 
   app.whenReady().then(async () => {
     log("==== 启动 ====");
