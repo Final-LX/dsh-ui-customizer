@@ -144,6 +144,7 @@ let controls = [];
 function renderAndCollect() { controls = collect(component(), []); timer.flush(); }
 const byType = (t) => controls.filter((x) => x.kind === t).map((x) => x.props);
 const btn = (txt) => controls.find((x) => x.kind === "button" && x.text === txt);
+const skinBtn = (id) => controls.find((x) => x.kind === "button" && x.props && x.props["data-skin"] === id);
 const lastTokens = () => overrideCalls[overrideCalls.length - 1].tokens;
 const saved = () => JSON.parse(localStorageStore["dsh-ui-customizer:config:v3"]);
 
@@ -152,7 +153,7 @@ assert(byType("text").length === 1, "文本输入数量: " + byType("text").leng
 assert(byType("color").length === 5, "颜色输入数量: " + byType("color").length);
 assert(byType("range").length === 4, "滑杆数量: " + byType("range").length);
 assert(byType("checkbox").length === 1, "复选框数量: " + byType("checkbox").length);
-assert(byType("select").length === 3, "下拉框数量: " + byType("select").length);
+assert(byType("select").length === 2, "下拉框数量: " + byType("select").length);
 assert(byType("file").length === 1, "文件输入数量: " + byType("file").length);
 assert(btn("应用") && btn("还原") && btn("重置为默认"), "缺操作按钮");
 assert(!localStorageStore["dsh-ui-customizer:config:v3"], "初始不应自动持久化");
@@ -180,7 +181,7 @@ assert(lastTokens()["--dsw-alias-state-business-primary"].light !== "#ff0000", "
 assert(lastTokens()["--dsw-alias-brand-primary"].light === "#111111", "还原后品牌色应保持已应用值");
 
 // ---- 皮肤：选深海 → 试穿 ----
-byType("select")[0].onChange({ target: { value: "ocean" } });
+skinBtn("ocean").props.onClick();
 renderAndCollect();
 assert(lastTokens()["--dsw-alias-state-business-primary"].light === "#14b8a6", "选皮肤未试穿");
 assert(saved().palette.brand === "#111111", "试穿皮肤不应覆盖已应用配置");
@@ -191,7 +192,7 @@ renderAndCollect();
 assert(saved().palette.accent === "#14b8a6", "应用皮肤后应持久化");
 
 // ---- 字体下拉 → 试穿 + 应用 ----
-byType("select")[1].onChange({ target: { value: "'Noto Sans SC', sans-serif" } });
+byType("select")[0].onChange({ target: { value: "'Noto Sans SC', sans-serif" } });
 renderAndCollect();
 assert(style.textContent.includes("--dsw-font-family:'Noto Sans SC', sans-serif"), "界面字体未生效");
 btn("应用").props.onClick();

@@ -50,7 +50,7 @@ npx @deepseek-ai/dsh web
 
 | 分组 | 控件 | 说明 |
 |---|---|---|
-| 皮肤 | 选择皮肤 | 8 套成品皮肤，一键试穿整套配色/通透度/毛玻璃/圆角 |
+| 皮肤中心 | 8 张色板卡片 | 点选即试穿整套配色/通透度/毛玻璃/圆角，选中高亮 |
 | 配色 | 品牌/强调/成功/警告/错误 | 5 个取色器，带 hex 值显示 |
 | 字体 | 界面字体 / 代码字体 | 下拉选择预设字体栈 |
 | | 整体缩放 | 80–140%，整体放大缩小界面 |
@@ -63,16 +63,21 @@ npx @deepseek-ai/dsh web
 
 ## 与其他插件共存（dsh-web-ui）
 
-本插件可以和 [dsh-web-ui](https://github.com/zhu1090093659/dsh-web-ui) 全家桶并存，各司其职：
+本插件可以和 [dsh-web-ui](https://github.com/zhu1090093659/dsh-web-ui) 全家桶并存：**功能用 dsh-web-ui，主题定制用本插件**。为避免两套主题打架，建议禁用 dsh-web-ui 自带的皮肤中心。
 
 ```powershell
-dsh plugin --profile web add @linxin666/dsh-web-ui-all   # 功能全家桶（看板/Git/SSH/移动端/宠物/皮肤中心…）
+dsh plugin --profile web add @linxin666/dsh-web-ui-all   # 功能全家桶（看板/Git/SSH/移动端/宠物…）
 dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"   # 本插件：DIY 主题
 ```
 
-建议分工：**功能用 dsh-web-ui，主题定制只走本插件的「DIY 主题」**。
+然后在 `~/.dsh/profiles/web/cordis.patch.yml` 里加一行，禁用它的皮肤中心：
 
-注意主题冲突：dsh-web-ui 的「皮肤中心」和本插件都会修改设计 token。如果在它那边应用了一款皮肤，又在本插件应用了 DIY 配色，两边会叠加、互相覆盖，颜色可能打架。想避免冲突，就只在一边改主题，另一边保持默认。
+```yaml
+- id: ui-skin-center
+  disabled: true
+```
+
+这样 dsh-web-ui 只提供功能，本插件的「皮肤中心」成为唯一主题系统，不会互相覆盖。
 
 ## 测试
 
