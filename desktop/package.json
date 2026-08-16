@@ -6,9 +6,42 @@
   "description": "DSH 桌面客户端：本地启动 dsh web 服务并用原生窗口打开（配合 dsh-ui-customizer 主题插件）",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh": "^0.1.0-rc.6",
+    "electron-updater": "^6.3.0"
   },
   "devDependencies": {
-    "electron": "^33.0.0"
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.finallx.dsh-ui-desktop",
+    "productName": "DSH",
+    "files": [
+      "main.js",
+      "assets/**",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/@deepseek-ai/**"
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "Final-LX",
+      "repo": "dsh-ui-customizer"
+    },
+    "win": {
+      "target": ["nsis"]
+    },
+    "mac": {
+      "target": ["dmg"]
+    },
+    "linux": {
+      "target": ["AppImage"]
+    }
   }
 }
