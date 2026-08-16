@@ -5,7 +5,11 @@ const { app, BrowserWindow } = require("electron");
 const { spawn, execSync } = require("node:child_process");
 
 const PROFILE = process.env.DSH_PROFILE || "web";   // 复用已有 web profile（已装 dsh-ui-customizer）
-const PORT = process.env.DSH_PORT || "0";            // 0 = 让 OS 分配空闲端口，避免冲突
+// 注意：必须用固定端口，不能用 --port 0！
+// localStorage 和 IndexedDB 都按 origin（含端口）隔离；端口一变 = 换了 origin =
+// 主题配置、上传的图片/视频、保存的方案全部“消失”。固定端口才能跨启动持久。
+// 用 3099 而非浏览器常用的 3080，避免和正在跑的浏览器版 dsh 抢端口。
+const PORT = process.env.DSH_PORT || "3099";
 const START_TIMEOUT_MS = 60000;
 
 let child = null;
