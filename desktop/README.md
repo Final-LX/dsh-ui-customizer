@@ -17,12 +17,20 @@ pnpm start
 ## 打包分发
 
 ```powershell
-pnpm pack              # 仅生成未打包目录（快速验证）
-pnpm dist              # 生成 Windows NSIS / macOS dmg / Linux AppImage
+pnpm pack              # 仅生成未打包目录 dist\win-unpacked（便携版，直接跑 DSH.exe）
+pnpm dist              # 生成 Windows NSIS 安装包 dist\DSH Setup 0.1.0.exe
 ```
 
-- 打包前需把 `@deepseek-ai/dsh` 加回 `dependencies`（内嵌 Node 运行器才能解析到 `lib/bin.js`）；`asarUnpack` 会把 `@deepseek-ai/**` 解出 asar，避免 DSH 的 ESM 动态 import 在 asar 内失败。
-- 自动更新走 `electron-updater` + GitHub Releases（`build.publish` 已指向 `Final-LX/dsh-ui-customizer`）。发版时用 `GH_TOKEN` 触发 electron-builder 上传 artifacts。
+产出物：
+- `dist\DSH Setup 0.1.0.exe` —— 安装包（已实测可生成，未签名，SmartScreen 会提示）。
+- `dist\win-unpacked\DSH.exe` —— 便携版（不装也能直接双击运行）。
+- `dist\latest.yml` + `.blockmap` —— 供 `electron-updater` 自动更新。
+
+已内置的打包坑位规避（`package.json` build 字段）：
+- `electronDist: node_modules/electron/dist`：复用本地 Electron 二进制，避免从 GitHub 下载 115MB zip（此网络下 GitHub 下载易损坏）。
+- `win.signAndEditExecutable: false`：跳过 winCodeSign 的 rcedit/签名步骤——非管理员、未开「开发者模式」的 Windows 上，winCodeSign 解包里的 macOS 符号链接会让 electron-builder 报「无法创建符号链接」。代价是 exe 不内嵌图标/版本号（用默认 Electron 图标）。
+
+若要真正上架/自动更新：把 `@deepseek-ai/dsh` 加回 `dependencies`（内嵌 Node 运行器才能解析到 `lib/bin.js`，否则打包版回退到系统 npx），发 GitHub Release 时配 `GH_TOKEN`。
 
 ## 环境变量
 
