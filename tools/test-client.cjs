@@ -24,15 +24,20 @@ const timer = makeTimerSystem();
 
 let handoff = null;
 const injectedStyles = [];
+let injectedVideo = null;
 const mockDocument = {
   querySelector: () => null,
   createElement: (tag) => {
     if (tag === "canvas") {
       return { tagName: tag, width: 0, height: 0, getContext: () => ({ drawImage: () => {} }), toDataURL: () => "data:image/jpeg;base64,COMPRESSED" };
     }
+    if (tag === "video") {
+      return { tagName: tag, dataset: {}, textContent: "", style: {}, className: "", parentNode: null, src: "", play: () => Promise.resolve(), pause: () => {}, load: () => {}, removeAttribute: () => {} };
+    }
     return { tagName: tag, dataset: {}, textContent: "", style: {}, className: "", parentNode: null };
   },
   head: { appendChild: (el) => injectedStyles.push(el) },
+  body: { appendChild: (el) => { injectedVideo = el; } },
 };
 
 const localStorageStore = {};
@@ -43,13 +48,16 @@ const mockLocalStorage = {
 };
 
 function makeReactMock() {
-  let state = null;
+  let hooks = [];
+  let hookIndex = 0;
   let lastCleanup = null;
   return {
+    _beginRender: () => { hookIndex = 0; },
     createElement: (type, props, ...children) => ({ type, props: props || {}, children }),
     useState: (initial) => {
-      if (state === null) state = (typeof initial === "function") ? initial() : initial;
-      return [state, (next) => { state = typeof next === "function" ? next(state) : next; }];
+      const idx = hookIndex++;
+      if (!(idx in hooks)) hooks[idx] = (typeof initial === "function") ? initial() : initial;
+      return [hooks[idx], (next) => { hooks[idx] = typeof next === "function" ? next(hooks[idx]) : next; }];
     },
     useEffect: (cb) => {
       if (lastCleanup) { const c = lastCleanup; lastCleanup = null; c(); }
@@ -84,6 +92,7 @@ const sandbox = {
   clearTimeout: timer.clearTimeout,
   FileReader: MockFileReader,
   Image: MockImage,
+  URL: { createObjectURL: (file) => "blob:mock-video-" + (file ? file.name : "") },
   console,
 };
 vm.createContext(sandbox);
@@ -141,7 +150,7 @@ function collect(node, out) {
   return out;
 }
 let controls = [];
-function renderAndCollect() { controls = collect(component(), []); timer.flush(); }
+function renderAndCollect() { reactMock._beginRender(); controls = collect(component(), []); timer.flush(); }
 const byType = (t) => controls.filter((x) => x.kind === t).map((x) => x.props);
 const btn = (txt) => controls.find((x) => x.kind === "button" && x.text === txt);
 const skinBtn = (id) => controls.find((x) => x.kind === "button" && x.props && x.props["data-skin"] === id);
@@ -149,13 +158,13 @@ const lastTokens = () => overrideCalls[overrideCalls.length - 1].tokens;
 const saved = () => JSON.parse(localStorageStore["dsh-ui-customizer:config:v3"]);
 
 renderAndCollect();
-assert(byType("text").length === 1, "文本输入数量: " + byType("text").length);
+assert(byType("text").length === 2, "文本输入数量: " + byType("text").length);
 assert(byType("color").length === 5, "颜色输入数量: " + byType("color").length);
 assert(byType("range").length === 4, "滑杆数量: " + byType("range").length);
 assert(byType("checkbox").length === 2, "复选框数量: " + byType("checkbox").length);
-assert(byType("select").length === 2, "下拉框数量: " + byType("select").length);
+assert(byType("select").length === 3, "下拉框数量: " + byType("select").length);
 assert(byType("file").length === 1, "文件输入数量: " + byType("file").length);
-assert(btn("应用") && btn("还原") && btn("重置为默认"), "缺操作按钮");
+assert(btn("应用") && btn("还原") && btn("重置为默认") && btn("保存当前方案"), "缺操作按钮");
 assert(!localStorageStore["dsh-ui-customizer:config:v3"], "初始不应自动持久化");
 
 // ---- 试穿：改品牌色 → 立即生效但不持久化 ----
@@ -237,6 +246,24 @@ renderAndCollect();
 assert(style.textContent !== "", "重新启用后应恢复 CSS");
 assert(overrideCalls.length > overrideCountBefore, "重新启用后应重新应用 token");
 
+// ---- 视频背景：切到视频类型 → 上传 mp4 → 视频元素生效 ----
+byType("select")[2].onChange({ target: { value: "video" } });
+renderAndCollect();
+byType("file")[0].onChange({ target: { files: [{ name: "bg.mp4" }], value: "" } });
+renderAndCollect();
+assert(injectedVideo && injectedVideo.src === "blob:mock-video-bg.mp4", "视频背景未生效");
+assert(injectedVideo.style.display === "block", "视频元素未显示");
+assert(style.textContent.indexOf("backdrop-filter") === -1, "视频背景不应加毛玻璃模糊");
+
+// ---- 保存方案 ----
+byType("text")[1].onChange({ target: { value: "我的深夜蓝" } });
+renderAndCollect();
+btn("保存当前方案").props.onClick();
+renderAndCollect();
+const schemes = JSON.parse(localStorageStore["dsh-ui-customizer:schemes"]);
+assert(schemes.length === 1 && schemes[0].name === "我的深夜蓝", "方案未保存");
+assert(schemes[0].config.backgroundType === "video", "方案配置应包含视频背景");
+
 console.log(JSON.stringify({
   ok: true,
   bundleId: handoff.id,
@@ -252,4 +279,6 @@ console.log(JSON.stringify({
   applyRevertWorks: true,
   skinCenterWorks: true,
   uploadWorks: true,
+  videoWorks: true,
+  schemesWorks: true,
 }, null, 2));
