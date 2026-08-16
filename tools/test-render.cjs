@@ -5,8 +5,15 @@ const vm = require("node:vm");
 const path = require("node:path");
 const { createRequire } = require("node:module");
 
-const NPM = "C:/Users/Administrator/AppData/Local/npm-cache/_npx/1e7f6d9597241db0/node_modules";
-const req = createRequire(NPM + "/@deepseek-ai/dsh/package.json");
+// 动态解析 @deepseek-ai/dsh 的位置：CI 上 `pnpm add -D @deepseek-ai/dsh` 会装进 node_modules；
+// 本地开发则回退到 npx 缓存路径。
+let dshPkgJson;
+try {
+  dshPkgJson = require.resolve("@deepseek-ai/dsh/package.json");
+} catch (e) {
+  dshPkgJson = "C:/Users/Administrator/AppData/Local/npm-cache/_npx/1e7f6d9597241db0/node_modules/@deepseek-ai/dsh/package.json";
+}
+const req = createRequire(dshPkgJson);
 const React = req("react");
 const ReactDOMServer = req("react-dom/server");
 

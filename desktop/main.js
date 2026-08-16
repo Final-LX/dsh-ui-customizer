@@ -109,8 +109,34 @@ function ensureProfile() {
 }
 
 // ---------- 服务启动 ----------
+// 探测端口上是否已有一个 DSH 实例（页面含 __DSH_BOOT__ 签名），有则复用，避免 EADDRINUSE
+function probeExistingDsh() {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (v) => { if (!done) { done = true; resolve(v); } };
+    let req;
+    try {
+      req = require("node:http").get(`http://127.0.0.1:${PORT}/`, { timeout: 3000 }, (res) => {
+        let body = "";
+        res.on("data", (c) => { body += c.toString(); if (body.length > 200000) res.destroy(); });
+        res.on("end", () => finish(res.statusCode === 200 && body.includes("__DSH_BOOT__")));
+      });
+      req.on("error", () => finish(false));
+      req.on("timeout", () => { req.destroy(); finish(false); });
+    } catch (e) { finish(false); }
+  });
+}
+
 function startServer() {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
+    // 已有 DSH 实例在跑 → 直接复用，不重复起服务
+    if (await probeExistingDsh()) {
+      webUrl = `http://127.0.0.1:${PORT}`;
+      log(`检测到已有 DSH 实例 ${webUrl}，直接复用`);
+      resolve(webUrl);
+      return;
+    }
+
     const args = ["--profile", PROFILE, "--port", PORT];
     serverChild = spawn(runner.cmd, [...runner.prefix, ...args], {
       env: runner.env,
@@ -118,28 +144,45 @@ function startServer() {
       shell: runner.shell
     });
 
-    let buf = "";
+    let buf = "";      // stdout + stderr 一起匹配（某些版本 URL 可能走 stderr）
+    let errBuf = "";
+    let settled = false;
+    let gotUrl = false;
+
     const timer = setTimeout(() => {
-      reject(new Error("DSH 启动超时（60s）。见日志 " + LOG_FILE));
+      if (settled) return;
+      settled = true;
+      reject(new Error("DSH 启动超时（60s）。stderr：" + (errBuf.slice(0, 500) || "（空）") + "\n日志：" + LOG_FILE));
     }, START_TIMEOUT_MS);
 
-    serverChild.stdout.on("data", (chunk) => {
+    const onData = (chunk) => {
       buf += chunk.toString();
-      log(chunk.toString().trimEnd());
       const m = /dsh web:\s*(https?:\/\/127\.0\.0\.1:\d+)/.exec(buf);
-      if (m && !webUrl) {
-        webUrl = m[1];
+      if (m && !settled) {
+        settled = true;
         clearTimeout(timer);
+        gotUrl = true;
+        webUrl = m[1];
         resolve(webUrl);
       }
-    });
-    serverChild.stderr.on("data", (chunk) => log("[stderr] " + chunk.toString().trimEnd()));
-    serverChild.on("error", (err) => { clearTimeout(timer); reject(err); });
+    };
+
+    serverChild.stdout.on("data", (chunk) => { log(chunk.toString().trimEnd()); onData(chunk); });
+    serverChild.stderr.on("data", (chunk) => { errBuf += chunk.toString(); log("[stderr] " + chunk.toString().trimEnd()); onData(chunk); });
+
+    serverChild.on("error", (err) => { if (!settled) { settled = true; clearTimeout(timer); reject(err); } });
+
     serverChild.on("exit", (code) => {
-      serverChild = null;
       log(`dsh 进程退出 code=${code}`);
-      if (!quitting && win && !win.isDestroyed()) {
-        // 服务意外崩溃 → 弹窗让用户选重启/退出
+      // 启动阶段就退出 → 立即报错，不等 60s
+      if (!gotUrl && !settled) {
+        settled = true;
+        clearTimeout(timer);
+        reject(new Error("DSH 进程提前退出（code=" + code + "）。stderr：" + (errBuf.slice(0, 800) || "（空）") + "\n日志：" + LOG_FILE));
+      }
+      serverChild = null;
+      // 运行期间（已就绪后）崩溃 → 弹窗让用户选重启/退出
+      if (gotUrl && !quitting && win && !win.isDestroyed()) {
         const choice = dialog.showMessageBoxSync(win, {
           type: "error",
           buttons: ["重启服务", "退出"],
