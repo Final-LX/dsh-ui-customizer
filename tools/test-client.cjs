@@ -152,7 +152,7 @@ renderAndCollect();
 assert(byType("text").length === 1, "文本输入数量: " + byType("text").length);
 assert(byType("color").length === 5, "颜色输入数量: " + byType("color").length);
 assert(byType("range").length === 4, "滑杆数量: " + byType("range").length);
-assert(byType("checkbox").length === 1, "复选框数量: " + byType("checkbox").length);
+assert(byType("checkbox").length === 2, "复选框数量: " + byType("checkbox").length);
 assert(byType("select").length === 2, "下拉框数量: " + byType("select").length);
 assert(byType("file").length === 1, "文件输入数量: " + byType("file").length);
 assert(btn("应用") && btn("还原") && btn("重置为默认"), "缺操作按钮");
@@ -200,7 +200,7 @@ renderAndCollect();
 assert(saved().fontFamily === "'Noto Sans SC', sans-serif", "应用后字体未持久化");
 
 // ---- 关壁纸 → 试穿 + 应用 ----
-byType("checkbox")[0].onChange({ target: { checked: false } });
+byType("checkbox")[1].onChange({ target: { checked: false } });
 renderAndCollect();
 assert(style.textContent.indexOf("background-image") === -1, "关壁纸后仍有背景图");
 btn("应用").props.onClick();
@@ -223,6 +223,19 @@ btn("应用").props.onClick();
 renderAndCollect();
 assert(saved().backgroundUrl === "data:image/jpeg;base64,COMPRESSED", "上传压缩未写入");
 assert(saved().useWallpaper === false, "上传后未关壁纸");
+
+// ---- 停用 DIY 主题 → 撤销所有覆盖 ----
+const overrideCountBefore = overrideCalls.length;
+byType("checkbox")[0].onChange({ target: { checked: false } });
+renderAndCollect();
+assert(style.textContent === "", "停用后应清空 CSS");
+assert(overrideCalls.length === overrideCountBefore, "停用后不应新增 token 覆盖");
+
+// ---- 重新启用 → 恢复覆盖 ----
+byType("checkbox")[0].onChange({ target: { checked: true } });
+renderAndCollect();
+assert(style.textContent !== "", "重新启用后应恢复 CSS");
+assert(overrideCalls.length > overrideCountBefore, "重新启用后应重新应用 token");
 
 console.log(JSON.stringify({
   ok: true,

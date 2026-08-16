@@ -46,10 +46,13 @@ npx @deepseek-ai/dsh web
 
 打开 Web GUI → 右上角 **设置** → 左侧导航 **DIY 主题**，即可按分组调整。
 
+顶部有「启用 DIY 主题」总开关：关闭后本插件完全不生效（覆盖全部撤销，方便让 dsh-web-ui 的皮肤中心接管），打开后恢复。
+
 所有改动都是「试穿」：实时预览但不落盘。满意后点右上角「应用」保存，「还原」撤销未保存的更改。配置存在浏览器 localStorage（`dsh-ui-customizer:config:v3`）。
 
 | 分组 | 控件 | 说明 |
 |---|---|---|
+| （总开关） | 启用 DIY 主题 | 关闭后撤销全部覆盖，不生效 |
 | 皮肤中心 | 8 张色板卡片 | 点选即试穿整套配色/通透度/毛玻璃/圆角，选中高亮 |
 | 配色 | 品牌/强调/成功/警告/错误 | 5 个取色器，带 hex 值显示 |
 | 字体 | 界面字体 / 代码字体 | 下拉选择预设字体栈 |
@@ -63,21 +66,19 @@ npx @deepseek-ai/dsh web
 
 ## 与其他插件共存（dsh-web-ui）
 
-本插件可以和 [dsh-web-ui](https://github.com/zhu1090093659/dsh-web-ui) 全家桶并存：**功能用 dsh-web-ui，主题定制用本插件**。为避免两套主题打架，建议禁用 dsh-web-ui 自带的皮肤中心。
+本插件可以和 [dsh-web-ui](https://github.com/zhu1090093659/dsh-web-ui) 全家桶并存：**功能用 dsh-web-ui，主题定制用本插件**。
 
 ```powershell
 dsh plugin --profile web add @linxin666/dsh-web-ui-all   # 功能全家桶（看板/Git/SSH/移动端/宠物…）
 dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"   # 本插件：DIY 主题
 ```
 
-然后在 `~/.dsh/profiles/web/cordis.patch.yml` 里加一行，禁用它的皮肤中心：
+两者都会改主题 token，想切换就靠本插件的「启用 DIY 主题」开关：
 
-```yaml
-- id: ui-skin-center
-  disabled: true
-```
+- **开**：本插件生效，DIY 皮肤/配色接管主题
+- **关**：本插件完全撤销，改用 dsh-web-ui 的皮肤中心
 
-这样 dsh-web-ui 只提供功能，本插件的「皮肤中心」成为唯一主题系统，不会互相覆盖。
+这样就避免了两套主题同时生效、互相覆盖的问题。
 
 ## 测试
 
