@@ -160,9 +160,9 @@ const saved = () => JSON.parse(localStorageStore["dsh-ui-customizer:config:v3"])
 renderAndCollect();
 assert(byType("text").length === 2, "文本输入数量: " + byType("text").length);
 assert(byType("color").length === 5, "颜色输入数量: " + byType("color").length);
-assert(byType("range").length === 4, "滑杆数量: " + byType("range").length);
+assert(byType("range").length === 5, "滑杆数量: " + byType("range").length);
 assert(byType("checkbox").length === 2, "复选框数量: " + byType("checkbox").length);
-assert(byType("select").length === 3, "下拉框数量: " + byType("select").length);
+assert(byType("select").length === 4, "下拉框数量: " + byType("select").length);
 assert(byType("file").length === 1, "文件输入数量: " + byType("file").length);
 assert(btn("应用") && btn("还原") && btn("重置为默认") && btn("保存当前方案"), "缺操作按钮");
 assert(!localStorageStore["dsh-ui-customizer:config:v3"], "初始不应自动持久化");
@@ -217,7 +217,7 @@ renderAndCollect();
 assert(saved().useWallpaper === false, "应用后未持久化壁纸开关");
 
 // ---- 圆角 → 试穿 + 应用 ----
-byType("range")[3].onChange({ target: { value: 16 } });
+byType("range")[4].onChange({ target: { value: 16 } });
 renderAndCollect();
 assert(style.textContent.includes("border-radius:16px"), "改圆角未生效");
 btn("应用").props.onClick();
@@ -245,6 +245,17 @@ byType("checkbox")[0].onChange({ target: { checked: true } });
 renderAndCollect();
 assert(style.textContent !== "", "重新启用后应恢复 CSS");
 assert(overrideCalls.length > overrideCountBefore, "重新启用后应重新应用 token");
+
+// ---- 字号缩放 → 覆盖字体 token ----
+byType("range")[1].onChange({ target: { value: 120 } });
+renderAndCollect();
+assert(lastTokens()["--dsw-font-base-16-font-size"].light === "19.2px", "字号缩放未应用");
+assert(lastTokens()["--dsw-font-markdown-h1-font-size"].light === "28.8px", "标题字号未按比例缩放");
+
+// ---- 阴影层级 → 覆盖阴影 token ----
+byType("select")[3].onChange({ target: { value: "strong" } });
+renderAndCollect();
+assert(lastTokens()["--dsw-shadow-lv3"].light.indexOf("48px") !== -1, "阴影层级未应用");
 
 // ---- 视频背景：切到视频类型 → 上传 mp4 → 视频元素生效 ----
 byType("select")[2].onChange({ target: { value: "video" } });
