@@ -142,6 +142,7 @@ function collect(node, out) {
   if (!node) return out;
   if (node.type === "input") out.push({ kind: node.props.type, props: node.props });
   else if (node.type === "select") out.push({ kind: "select", props: node.props });
+  else if (node.type === "span" && node.props && node.props["data-switch"]) out.push({ kind: "switch", props: node.props });
   else if (node.type === "button") {
     const text = Array.isArray(node.children) && node.children.length && typeof node.children[0] === "string" ? node.children[0] : "";
     out.push({ kind: "button", props: node.props, text });
@@ -161,8 +162,9 @@ renderAndCollect();
 assert(byType("text").length === 2, "文本输入数量: " + byType("text").length);
 assert(byType("color").length === 5, "颜色输入数量: " + byType("color").length);
 assert(byType("range").length === 5, "滑杆数量: " + byType("range").length);
-assert(byType("checkbox").length === 2, "复选框数量: " + byType("checkbox").length);
-assert(byType("select").length === 4, "下拉框数量: " + byType("select").length);
+assert(byType("checkbox").length === 1, "复选框数量: " + byType("checkbox").length);
+assert(byType("select").length === 5, "下拉框数量: " + byType("select").length);
+assert(byType("switch").length === 1, "开关数量: " + byType("switch").length);
 assert(byType("file").length === 1, "文件输入数量: " + byType("file").length);
 assert(btn("应用") && btn("还原") && btn("重置为默认") && btn("保存当前方案"), "缺操作按钮");
 assert(!localStorageStore["dsh-ui-customizer:config:v3"], "初始不应自动持久化");
@@ -201,7 +203,7 @@ renderAndCollect();
 assert(saved().palette.accent === "#14b8a6", "应用皮肤后应持久化");
 
 // ---- 字体下拉 → 试穿 + 应用 ----
-byType("select")[0].onChange({ target: { value: "'Noto Sans SC', sans-serif" } });
+byType("select")[1].onChange({ target: { value: "'Noto Sans SC', sans-serif" } });
 renderAndCollect();
 assert(style.textContent.includes("--dsw-font-family:'Noto Sans SC', sans-serif"), "界面字体未生效");
 btn("应用").props.onClick();
@@ -209,7 +211,7 @@ renderAndCollect();
 assert(saved().fontFamily === "'Noto Sans SC', sans-serif", "应用后字体未持久化");
 
 // ---- 关壁纸 → 试穿 + 应用 ----
-byType("checkbox")[1].onChange({ target: { checked: false } });
+byType("checkbox")[0].onChange({ target: { checked: false } });
 renderAndCollect();
 assert(style.textContent.indexOf("background-image") === -1, "关壁纸后仍有背景图");
 btn("应用").props.onClick();
@@ -235,13 +237,13 @@ assert(saved().useWallpaper === false, "上传后未关壁纸");
 
 // ---- 停用 DIY 主题 → 撤销所有覆盖 ----
 const overrideCountBefore = overrideCalls.length;
-byType("checkbox")[0].onChange({ target: { checked: false } });
+byType("switch")[0].onClick();
 renderAndCollect();
 assert(style.textContent === "", "停用后应清空 CSS");
 assert(overrideCalls.length === overrideCountBefore, "停用后不应新增 token 覆盖");
 
 // ---- 重新启用 → 恢复覆盖 ----
-byType("checkbox")[0].onChange({ target: { checked: true } });
+byType("switch")[0].onClick();
 renderAndCollect();
 assert(style.textContent !== "", "重新启用后应恢复 CSS");
 assert(overrideCalls.length > overrideCountBefore, "重新启用后应重新应用 token");
@@ -253,12 +255,19 @@ assert(lastTokens()["--dsw-font-base-16-font-size"].light === "19.2px", "字号�
 assert(lastTokens()["--dsw-font-markdown-h1-font-size"].light === "28.8px", "标题字号未按比例缩放");
 
 // ---- 阴影层级 → 覆盖阴影 token ----
-byType("select")[3].onChange({ target: { value: "strong" } });
+byType("select")[4].onChange({ target: { value: "strong" } });
 renderAndCollect();
 assert(lastTokens()["--dsw-shadow-lv3"].light.indexOf("48px") !== -1, "阴影层级未应用");
 
+// ---- 中性色调 → 覆盖文字/边框/代码块 token ----
+byType("select")[0].onChange({ target: { value: "graphite" } });
+renderAndCollect();
+assert(lastTokens()["--dsw-alias-label-primary"].light === "#0d0f12", "中性色调未应用到主文字");
+assert(lastTokens()["--dsw-alias-border-l2"].dark === "#2b2e33", "中性色调未应用到边框");
+assert(lastTokens()["--dsw-alias-markdown-code-block"].light === "#eceff2", "中性色调未应用到代码块");
+
 // ---- 视频背景：切到视频类型 → 上传 mp4 → 视频元素生效 ----
-byType("select")[2].onChange({ target: { value: "video" } });
+byType("select")[3].onChange({ target: { value: "video" } });
 renderAndCollect();
 byType("file")[0].onChange({ target: { files: [{ name: "bg.mp4" }], value: "" } });
 renderAndCollect();
@@ -284,6 +293,7 @@ console.log(JSON.stringify({
   colorInputs: byType("color").length,
   rangeInputs: byType("range").length,
   checkboxes: byType("checkbox").length,
+  switches: byType("switch").length,
   selects: byType("select").length,
   fileInputs: byType("file").length,
   tryOnWorks: true,
