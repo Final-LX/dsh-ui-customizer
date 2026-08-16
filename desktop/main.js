@@ -40,8 +40,32 @@ function log(line) {
 }
 
 // ---------- DSH 运行器 ----------
-// 优先用 Electron 内嵌 Node 直接跑 @deepseek-ai/dsh/lib/bin.js（打包后无系统 node/npx）；
-// 解析不到时回退到系统 npx（dev 模式）。
+// 三级策略，避开 npx/cmd/shell 在 Electron 下 stdio 捕获不稳的坑：
+//   1) 打包内嵌了 @deepseek-ai/dsh → 用 Electron 内嵌 Node 跑 bin.js
+//   2) 本机 npx 缓存里有 @deepseek-ai/dsh → 用系统 node.exe 直接跑 bin.js
+//   3) 回退 npx（需要 npx 在 PATH）
+function findInPath(filename) {
+  for (const dir of (process.env.PATH || "").split(";")) {
+    if (!dir) continue;
+    const p = path.join(dir, filename);
+    try { if (fs.existsSync(p)) return p; } catch (e) {}
+  }
+  return null;
+}
+
+function findDshBinInNpxCache() {
+  const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local");
+  const cacheRoot = path.join(localAppData, "npm-cache", "_npx");
+  try {
+    if (!fs.existsSync(cacheRoot)) return null;
+    for (const d of fs.readdirSync(cacheRoot)) {
+      const bin = path.join(cacheRoot, d, "node_modules", "@deepseek-ai", "dsh", "lib", "bin.js");
+      if (fs.existsSync(bin)) return bin;
+    }
+  } catch (e) {}
+  return null;
+}
+
 function resolveDshRunner() {
   try {
     const bin = require.resolve("@deepseek-ai/dsh/lib/bin.js");
@@ -52,6 +76,11 @@ function resolveDshRunner() {
       shell: false
     };
   } catch (e) {
+    const bin = findDshBinInNpxCache();
+    if (bin) {
+      const node = findInPath("node.exe") || "node";
+      return { cmd: node, prefix: [bin], env: process.env, shell: false };
+    }
     return {
       cmd: "npx",
       prefix: ["--yes", "@deepseek-ai/dsh"],
@@ -206,6 +235,12 @@ function createWindow() {
     minHeight: 640,
     backgroundColor: "#111318",
     title: "DSH",
+    frame: false,                       // 去掉系统默认标题栏
+    titleBarOverlay: {                  // 右上角悬浮原生窗口控制按钮（最小化/最大化/关闭）
+      color: "#111318",
+      symbolColor: "#c9ced6",
+      height: 36
+    },
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -214,6 +249,22 @@ function createWindow() {
     }
   });
   win.loadURL(webUrl);
+  // 顶部左侧留一条可拖拽区域；右侧 138px 让给原生窗口控制按钮，不遮 DSH 自己的右上角按钮
+  win.webContents.on("dom-ready", () => {
+    try {
+      win.webContents.insertCSS(`
+        html::before {
+          content: "";
+          position: fixed;
+          top: 0; left: 0;
+          width: calc(100% - 138px);
+          height: 36px;
+          -webkit-app-region: drag;
+          z-index: 2147483647;
+        }
+      `);
+    } catch (e) {}
+  });
   win.on("close", (e) => {
     if (!quitting && tray) {   // 关窗 = 最小化到托盘
       e.preventDefault();
