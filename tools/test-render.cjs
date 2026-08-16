@@ -58,7 +58,7 @@ if (!sectionHtml.includes("[settings.diy.item]")) throw new Error("分区未渲�
 
 // 设置行渲染：验证控件齐全
 const html = ReactDOMServer.renderToStaticMarkup(React.createElement(itemReg.component, {}));
-["DIY 主题", "配色", "字体", "背景", "组件", 'type="text"', 'type="color"', 'type="range"', 'type="file"', "重置默认"].forEach((needle) => {
+["DIY 主题", "皮肤", "配色", "字体", "背景", "组件", "应用", "还原", "重置为默认", 'type="text"', 'type="color"', 'type="range"', 'type="file"'].forEach((needle) => {
   if (!html.includes(needle)) throw new Error("render 输出缺少: " + needle);
 });
 

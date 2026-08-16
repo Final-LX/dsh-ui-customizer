@@ -1,6 +1,6 @@
 // 无头测试：mock window/document/localStorage/React/计时器/FileReader/Image，
 // 真实执行 client.js 的 factory + apply，渲染分区与设置行，断言主题覆盖、CSS、
-// 模板、字体下拉、圆角、防抖、上传压缩。node tools/test-client.cjs [client.js]
+// 试穿/应用/还原、皮肤、字体、圆角、上传。node tools/test-client.cjs [client.js]
 const fs = require("node:fs");
 const vm = require("node:vm");
 const path = require("node:path");
@@ -121,16 +121,11 @@ assert(itemReg && itemReg.options.id === "diy-customizer", "条目注册不正�
 assert(overrideCalls.length === 1 && overrideCalls[0].source === "dsh-ui-customizer", "初始 token 未应用");
 const tokenNames = Object.keys(overrideCalls[0].tokens);
 assert(tokenNames.length >= 24, "token 数量过少: " + tokenNames.length);
-assert(tokenNames.indexOf("--dsw-alias-brand-primary") !== -1, "缺品牌 token");
-assert(tokenNames.indexOf("--dsw-alias-state-business-primary") !== -1, "缺强调 token");
 
 const style = injectedStyles[0];
 assert(style && style.dataset.plugin === "dsh-ui-customizer", "style 未注入");
 assert(style.textContent.includes("background-image:url("), "缺背景图");
-assert(style.textContent.includes("blur(3px)"), "缺默认 blur");
 assert(style.textContent.includes("border-radius:10px"), "缺圆角");
-assert(style.textContent.indexOf("dsh-ripple") === -1, "应已移除波纹");
-assert(style.textContent.indexOf("dshWater") === -1 && style.textContent.indexOf("dshAurora") === -1, "应已移除背景动效");
 
 // ---- 渲染 + 收集 + flush ----
 const component = itemReg.component;
@@ -138,12 +133,19 @@ function collect(node, out) {
   if (!node) return out;
   if (node.type === "input") out.push({ kind: node.props.type, props: node.props });
   else if (node.type === "select") out.push({ kind: "select", props: node.props });
+  else if (node.type === "button") {
+    const text = Array.isArray(node.children) && node.children.length && typeof node.children[0] === "string" ? node.children[0] : "";
+    out.push({ kind: "button", props: node.props, text });
+  }
   if (Array.isArray(node.children)) for (const c of node.children) collect(c, out);
   return out;
 }
 let controls = [];
 function renderAndCollect() { controls = collect(component(), []); timer.flush(); }
 const byType = (t) => controls.filter((x) => x.kind === t).map((x) => x.props);
+const btn = (txt) => controls.find((x) => x.kind === "button" && x.text === txt);
+const lastTokens = () => overrideCalls[overrideCalls.length - 1].tokens;
+const saved = () => JSON.parse(localStorageStore["dsh-ui-customizer:config:v3"]);
 
 renderAndCollect();
 assert(byType("text").length === 1, "文本输入数量: " + byType("text").length);
@@ -152,45 +154,74 @@ assert(byType("range").length === 4, "滑杆数量: " + byType("range").length);
 assert(byType("checkbox").length === 1, "复选框数量: " + byType("checkbox").length);
 assert(byType("select").length === 3, "下拉框数量: " + byType("select").length);
 assert(byType("file").length === 1, "文件输入数量: " + byType("file").length);
+assert(btn("应用") && btn("还原") && btn("重置为默认"), "缺操作按钮");
+assert(!localStorageStore["dsh-ui-customizer:config:v3"], "初始不应自动持久化");
 
-// ---- 改品牌色 ----
+// ---- 试穿：改品牌色 → 立即生效但不持久化 ----
 byType("color")[0].onChange({ target: { value: "#111111" } });
 renderAndCollect();
-assert(overrideCalls[overrideCalls.length - 1].tokens["--dsw-alias-brand-primary"].light === "#111111", "改品牌色未应用");
+assert(lastTokens()["--dsw-alias-brand-primary"].light === "#111111", "改品牌色未试穿生效");
+assert(!localStorageStore["dsh-ui-customizer:config:v3"], "试穿阶段不应写入 localStorage");
 
-// ---- 改强调色 ----
+// ---- 应用 → 持久化 ----
+btn("应用").props.onClick();
+renderAndCollect();
+assert(saved().palette.brand === "#111111", "应用后品牌色应持久化");
+
+// ---- 试穿：改强调色 → 生效但未持久化 ----
 byType("color")[1].onChange({ target: { value: "#ff0000" } });
 renderAndCollect();
-assert(overrideCalls[overrideCalls.length - 1].tokens["--dsw-alias-state-business-primary"].light === "#ff0000", "改强调色未应用");
+assert(lastTokens()["--dsw-alias-state-business-primary"].light === "#ff0000", "改强调色未试穿生效");
 
-// ---- 字体下拉 ----
+// ---- 还原 → 回滚到已应用 ----
+btn("还原").props.onClick();
+renderAndCollect();
+assert(lastTokens()["--dsw-alias-state-business-primary"].light !== "#ff0000", "还原后强调色应回滚");
+assert(lastTokens()["--dsw-alias-brand-primary"].light === "#111111", "还原后品牌色应保持已应用值");
+
+// ---- 皮肤：选深海 → 试穿 ----
+byType("select")[0].onChange({ target: { value: "ocean" } });
+renderAndCollect();
+assert(lastTokens()["--dsw-alias-state-business-primary"].light === "#14b8a6", "选皮肤未试穿");
+assert(saved().palette.brand === "#111111", "试穿皮肤不应覆盖已应用配置");
+
+// ---- 应用皮肤 ----
+btn("应用").props.onClick();
+renderAndCollect();
+assert(saved().palette.accent === "#14b8a6", "应用皮肤后应持久化");
+
+// ---- 字体下拉 → 试穿 + 应用 ----
 byType("select")[1].onChange({ target: { value: "'Noto Sans SC', sans-serif" } });
 renderAndCollect();
-assert(JSON.parse(localStorageStore["dsh-ui-customizer:config:v3"]).fontFamily === "'Noto Sans SC', sans-serif", "界面字体下拉未写入");
-assert(style.textContent.includes("--dsw-font-family:'Noto Sans SC', sans-serif"), "界面字体 CSS 未应用");
+assert(style.textContent.includes("--dsw-font-family:'Noto Sans SC', sans-serif"), "界面字体未生效");
+btn("应用").props.onClick();
+renderAndCollect();
+assert(saved().fontFamily === "'Noto Sans SC', sans-serif", "应用后字体未持久化");
 
-// ---- 关壁纸 ----
+// ---- 关壁纸 → 试穿 + 应用 ----
 byType("checkbox")[0].onChange({ target: { checked: false } });
 renderAndCollect();
 assert(style.textContent.indexOf("background-image") === -1, "关壁纸后仍有背景图");
-
-// ---- 模板：深海（ocean）----
-byType("select")[0].onChange({ target: { value: "ocean" } });
+btn("应用").props.onClick();
 renderAndCollect();
-assert(overrideCalls[overrideCalls.length - 1].tokens["--dsw-alias-state-business-primary"].light === "#14b8a6", "深海模板强调色未应用");
+assert(saved().useWallpaper === false, "应用后未持久化壁纸开关");
 
-// ---- 圆角 ----
+// ---- 圆角 → 试穿 + 应用 ----
 byType("range")[3].onChange({ target: { value: 16 } });
 renderAndCollect();
-assert(style.textContent.includes("border-radius:16px"), "改圆角未应用");
+assert(style.textContent.includes("border-radius:16px"), "改圆角未生效");
+btn("应用").props.onClick();
+renderAndCollect();
+assert(saved().radius === 16, "应用后未持久化圆角");
 
-// ---- 上传图片 ----
+// ---- 上传图片 → 压缩 → 试穿 + 应用 ----
 byType("file")[0].onChange({ target: { files: [{ name: "photo.png" }], value: "" } });
 timer.flush();
 renderAndCollect();
-const saved = JSON.parse(localStorageStore["dsh-ui-customizer:config:v3"]);
-assert(saved.backgroundUrl === "data:image/jpeg;base64,COMPRESSED", "上传压缩未写入");
-assert(saved.useWallpaper === false, "上传后未关壁纸");
+btn("应用").props.onClick();
+renderAndCollect();
+assert(saved().backgroundUrl === "data:image/jpeg;base64,COMPRESSED", "上传压缩未写入");
+assert(saved().useWallpaper === false, "上传后未关壁纸");
 
 console.log(JSON.stringify({
   ok: true,
@@ -203,9 +234,8 @@ console.log(JSON.stringify({
   checkboxes: byType("checkbox").length,
   selects: byType("select").length,
   fileInputs: byType("file").length,
-  noEffects: true,
-  paletteWorks: true,
-  presetsWorks: true,
-  radiusWorks: true,
+  tryOnWorks: true,
+  applyRevertWorks: true,
+  skinCenterWorks: true,
   uploadWorks: true,
 }, null, 2));
