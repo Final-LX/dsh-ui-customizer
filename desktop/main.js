@@ -250,30 +250,34 @@ function createWindow() {
     try {
       win.webContents.insertCSS(`
         #__ds_titlebar {
-          position: fixed; top: 0; left: 0; right: 0; height: 32px;
-          display: flex; align-items: center; justify-content: space-between;
-          background: #111318; color: #c9ced6;
-          -webkit-app-region: drag; z-index: 2147483647;
-          font-family: system-ui, "Segoe UI", sans-serif; font-size: 12px;
-          padding: 0 6px 0 10px; box-sizing: border-box; user-select: none;
+          position: fixed; top: 0; left: 0; right: 0; height: 32px; z-index: 2147483647;
+          display: flex; align-items: center; justify-content: flex-end;
+          background: var(--dsw-alias-bg-base, #111318);
+          border-bottom: 1px solid var(--dsw-alias-border-l1, rgba(255,255,255,.06));
+          -webkit-app-region: drag;
+          padding: 0 6px; box-sizing: border-box; user-select: none;
         }
-        #__ds_titlebar .__ds_title { opacity: .65; letter-spacing: .5px; }
         #__ds_titlebar .__ds_btns { display: flex; gap: 2px; -webkit-app-region: no-drag; }
         #__ds_titlebar button {
-          width: 40px; height: 26px; border: none; background: transparent; color: #c9ced6;
-          cursor: pointer; font-size: 12px; line-height: 1; border-radius: 4px;
+          width: 38px; height: 26px; border: none; background: transparent;
+          color: var(--dsw-alias-label-secondary, #9aa3ad);
+          cursor: pointer; font-size: 11px; border-radius: 5px;
           display: flex; align-items: center; justify-content: center;
+          font-family: inherit;
         }
-        #__ds_titlebar button:hover { background: rgba(255,255,255,.12); }
+        #__ds_titlebar button:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,.08)); }
         #__ds_titlebar #__ds_close:hover { background: #e81123; color: #fff; }
-        #root { height: calc(100vh - 32px) !important; margin-top: 32px !important; }
+
+        html, body { height: 100%; }
+        body { padding-top: 32px !important; box-sizing: border-box !important; overflow: hidden !important; }
+        #root { height: 100% !important; margin: 0 !important; }
       `);
       win.webContents.executeJavaScript(`
         (function () {
           if (document.getElementById("__ds_titlebar")) return;
           var bar = document.createElement("div");
           bar.id = "__ds_titlebar";
-          bar.innerHTML = '<span class="__ds_title">DSH</span><span class="__ds_btns">'
+          bar.innerHTML = '<span class="__ds_btns">'
             + '<button id="__ds_min" title="最小化">─</button>'
             + '<button id="__ds_max" title="最大化/还原">□</button>'
             + '<button id="__ds_close" title="关闭">×</button>'
