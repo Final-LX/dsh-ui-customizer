@@ -135,6 +135,8 @@ const style = injectedStyles[0];
 assert(style && style.dataset.plugin === "dsh-ui-customizer", "style 未注入");
 assert(style.textContent.includes("background-image:url("), "缺背景图");
 assert(style.textContent.includes("border-radius:10px"), "缺圆角");
+assert(style.textContent.includes("data-diy-range"), "缺自定义滑块样式");
+assert(style.textContent.includes("-webkit-slider-thumb"), "缺滑块拇指样式");
 
 // ---- 渲染 + 收集 + flush ----
 const component = itemReg.component;
@@ -168,6 +170,10 @@ assert(byType("switch").length === 1, "开关数量: " + byType("switch").length
 assert(byType("file").length === 1, "文件输入数量: " + byType("file").length);
 assert(btn("应用") && btn("还原") && btn("重置为默认") && btn("保存当前方案"), "缺操作按钮");
 assert(!localStorageStore["dsh-ui-customizer:config:v3"], "初始不应自动持久化");
+
+// ---- 滑块：带 data 属性 + 填充进度 ----
+const range0 = byType("range")[0];
+assert(range0["data-diy-range"] === "" && typeof range0.style["--diy-fill"] === "string", "滑块缺少 data 属性或填充进度");
 
 // ---- 试穿：改品牌色 → 立即生效但不持久化 ----
 byType("color")[0].onChange({ target: { value: "#111111" } });
