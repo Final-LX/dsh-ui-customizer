@@ -167,7 +167,7 @@ assert(byType("text").length === 2, "文本输入数量: " + byType("text").leng
 assert(byType("color").length === 5, "颜色输入数量: " + byType("color").length);
 assert(byType("range").length === 5, "滑杆数量: " + byType("range").length);
 assert(byType("checkbox").length === 1, "复选框数量: " + byType("checkbox").length);
-assert(byType("select").length === 5, "下拉框数量: " + byType("select").length);
+assert(byType("select").length === 6, "下拉框数量: " + byType("select").length);
 assert(byType("switch").length === 1, "开关数量: " + byType("switch").length);
 assert(byType("file").length === 1, "文件输入数量: " + byType("file").length);
 assert(btn("应用") && btn("还原") && btn("重置为默认") && btn("保存当前方案"), "缺操作按钮");
@@ -274,6 +274,18 @@ renderAndCollect();
 assert(lastTokens()["--dsw-alias-label-primary"].light === "#0d0f12", "中性色调未应用到主文字");
 assert(lastTokens()["--dsw-alias-border-l2"].dark === "#2b2e33", "中性色调未应用到边框");
 assert(lastTokens()["--dsw-alias-markdown-code-block"].light === "#eceff2", "中性色调未应用到代码块");
+
+// ---- 边框风格 → 覆盖输入框/侧边栏/对话框边框 CSS ----
+byType("select")[5].onChange({ target: { value: "frame" } });
+renderAndCollect();
+assert(style.textContent.includes("border:2px solid var(--dsw-alias-border-l3)"), "边框风格未应用相框边框");
+assert(style.textContent.includes(".hHd-Xa_root"), "边框风格未覆盖侧边栏");
+byType("select")[5].onChange({ target: { value: "glow" } });
+renderAndCollect();
+assert(style.textContent.indexOf("0 0 14px") !== -1, "发光边框未应用");
+byType("select")[5].onChange({ target: { value: "none" } });
+renderAndCollect();
+assert(style.textContent.includes("border:0;box-shadow:none;"), "无边框未应用");
 
 // ---- 视频背景：切到视频类型 → 上传 mp4 → 视频元素生效 ----
 byType("select")[3].onChange({ target: { value: "video" } });
