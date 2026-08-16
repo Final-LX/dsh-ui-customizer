@@ -1,10 +1,10 @@
 # DSH 桌面客户端
 
-用 Electron 把 DSH 的浏览器界面包成独立桌面窗口：本地起 `dsh web`，等它就绪后开原生窗口；带首次引导、日志落盘、崩溃恢复和托盘。
+用 Electron 把 DSH 的浏览器界面包成独立桌面窗口：本地起 `dsh web`，等它就绪后开原生窗口；带首次引导、日志落盘、崩溃恢复和托盘。端口上已有一个 DSH 实例时会直接复用（不重复起服务、不报占用）；启动失败会立即弹出带真实原因的错误，不再干等超时。
 
 ## 下载安装包
 
-- 安装包（Windows）：<https://github.com/Final-LX/dsh-ui-customizer/releases/download/v0.1.0/DSH-Setup-0.1.0.exe>
+- 最新安装包（Windows）：<https://github.com/Final-LX/dsh-ui-customizer/releases/latest>（找 `DSH-Setup-*.exe`）
 - 全部版本：<https://github.com/Final-LX/dsh-ui-customizer/releases>
 
 双击安装（未签名，SmartScreen 提示「仍要运行」）。装完启动即可。
