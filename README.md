@@ -61,6 +61,19 @@ npx @deepseek-ai/dsh web
 | | 毛玻璃强度 | 0–30px，0 为关闭模糊（最省性能） |
 | 组件 | 圆角 | 0–24px，作用于按钮/输入/对话框等 |
 
+## 与其他插件共存（dsh-web-ui）
+
+本插件可以和 [dsh-web-ui](https://github.com/zhu1090093659/dsh-web-ui) 全家桶并存，各司其职：
+
+```powershell
+dsh plugin --profile web add @linxin666/dsh-web-ui-all   # 功能全家桶（看板/Git/SSH/移动端/宠物/皮肤中心…）
+dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"   # 本插件：DIY 主题
+```
+
+建议分工：**功能用 dsh-web-ui，主题定制只走本插件的「DIY 主题」**。
+
+注意主题冲突：dsh-web-ui 的「皮肤中心」和本插件都会修改设计 token。如果在它那边应用了一款皮肤，又在本插件应用了 DIY 配色，两边会叠加、互相覆盖，颜色可能打架。想避免冲突，就只在一边改主题，另一边保持默认。
+
 ## 测试
 
 ```powershell
