@@ -283,6 +283,7 @@ renderAndCollect();
 assert(injectedVideo && injectedVideo.src === "blob:mock-video-bg.mp4", "视频背景未生效");
 assert(injectedVideo.style.display === "block", "视频元素未显示");
 assert(style.textContent.indexOf("backdrop-filter") === -1, "视频背景不应加毛玻璃模糊");
+assert(style.textContent.includes("html,body{background:transparent;}"), "视频背景应让 html/body 透明");
 
 // ---- 保存方案 ----
 byType("text")[1].onChange({ target: { value: "我的深夜蓝" } });
@@ -292,6 +293,45 @@ renderAndCollect();
 const schemes = JSON.parse(localStorageStore["dsh-ui-customizer:schemes"]);
 assert(schemes.length === 1 && schemes[0].name === "我的深夜蓝", "方案未保存");
 assert(schemes[0].config.backgroundType === "video", "方案配置应包含视频背景");
+
+// ---- 惰性视频元素：bundle 在 body 为 null 时 materialize，视频延迟到 body 就绪后再建 ----
+(function () {
+  let handoff2 = null;
+  let injectedVideo2 = null;
+  let bodyObj = null;
+  const doc2 = {
+    querySelector: () => null,
+    createElement: (tag) => {
+      if (tag === "video") return { tagName: tag, dataset: {}, textContent: "", style: {}, className: "", parentNode: null, src: "", play: () => Promise.resolve(), pause: () => {}, load: () => {}, removeAttribute: () => {} };
+      return { tagName: tag, dataset: {}, textContent: "", style: {}, className: "", parentNode: null };
+    },
+    head: { appendChild: () => {} },
+    body: null
+  };
+  Object.defineProperty(doc2, "body", { get: () => bodyObj });
+  const store2 = {};
+  const ls2 = {
+    getItem: (k) => (Object.prototype.hasOwnProperty.call(store2, k) ? store2[k] : null),
+    setItem: (k, v) => { store2[k] = String(v); },
+    removeItem: (k) => { delete store2[k]; }
+  };
+  store2["dsh-ui-customizer:config:v3"] = JSON.stringify({ enabled: true, preset: "fresh", palette: { brand: "#4f6ef7", accent: "#8b5cf6", success: "#10b981", warning: "#f59e0b", danger: "#ef4444" }, fontFamily: "", codeFont: "", zoom: 100, fontScale: 100, shadowLevel: "standard", neutralTone: "blue", useWallpaper: false, backgroundUrl: "", backgroundType: "video", videoUrl: "blob:lazy", glassAlpha: 0.85, blur: 0, radius: 10 });
+
+  const sandbox2 = { window: { __ModuleLoader__: { load: (h) => (handoff2 = h) } }, document: doc2, localStorage: ls2, setTimeout: timer.setTimeout, clearTimeout: timer.clearTimeout, FileReader: MockFileReader, Image: MockImage, URL: { createObjectURL: (f) => "blob:mock-" + (f ? f.name : "") }, console };
+  vm.createContext(sandbox2);
+  vm.runInContext(src, sandbox2);
+  const exp2 = handoff2.factory((spec) => { if (spec === "react") return reactMock; throw new Error("unexpected require: " + spec); });
+  const ctx2 = {
+    theme: { overrideTokens: () => () => {} },
+    slots: { inject: () => () => {}, register: () => () => {} },
+    effect: (cb) => { cb(); return () => {}; }
+  };
+  exp2.apply(ctx2); // body 仍为 null
+  assert(injectedVideo2 === null, "body 为 null 时不应创建视频元素（应延迟到 body 就绪）");
+  bodyObj = { appendChild: (el) => { injectedVideo2 = el; } };
+  exp2.apply(ctx2); // body 就绪后再次应用 → 惰性创建
+  assert(injectedVideo2 !== null && injectedVideo2.src === "blob:lazy", "body 就绪后应惰性创建视频元素并播放");
+})();
 
 console.log(JSON.stringify({
   ok: true,
