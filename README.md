@@ -103,7 +103,8 @@ node tools/test-tokens.cjs   # 逐个核对覆盖的 --dsw-* / --ds-* token 是�
 
 ## 桌面 App 与 CI（同步官方更新）
 
-- **桌面壳**：`desktop/` 里的 Electron 客户端，本地起 `dsh web` 并开原生窗口；带首次引导（自动装插件）、内嵌 Node 运行器（打包后无需系统 node/npx）、日志落盘、崩溃恢复、托盘，可用 electron-builder 打包，详见 `desktop/README.md`。
+- **桌面壳**：`desktop/` 里的 Electron 客户端，本地起 `dsh web` 并开原生窗口；带首次引导（自动装插件，幂等）、固定端口（保证 localStorage/IndexedDB 跨启动持久）、日志落盘、崩溃恢复、托盘，已出 Windows 安装包。详见 `desktop/README.md`。
+- **API key 与官方一致**：桌面壳**不**自动填 key、也不代管密钥——新用户首次打开窗口会进入 DSH 自带的「填 API key」引导（或自行设置 `DEEPSEEK_API_KEY` 环境变量），与官方 `dsh web` 行为完全一致。
 - **CI**：`.github/workflows/ci.yml` 用 GitHub Actions 跑「官方 latest + 固定版」双矩阵，执行上面的测试 + token 比对；每天 UTC 03:00 定时跑，官方 RC 版契约一变（token 改名/删除）就会红灯，能抢在用户遇到前修复。
 
 ## 换壁纸

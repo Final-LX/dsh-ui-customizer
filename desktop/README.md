@@ -2,6 +2,20 @@
 
 用 Electron 把 DSH 的浏览器界面包成独立桌面窗口：本地起 `dsh web`，等它就绪后开原生窗口；带首次引导、日志落盘、崩溃恢复和托盘。
 
+## 下载安装包
+
+- 安装包（Windows）：<https://github.com/Final-LX/dsh-ui-customizer/releases/download/v0.1.0/DSH-Setup-0.1.0.exe>
+- 全部版本：<https://github.com/Final-LX/dsh-ui-customizer/releases>
+
+双击安装（未签名，SmartScreen 提示「仍要运行」）。装完启动即可。
+
+## API key（与官方一致）
+
+本桌面壳**不自动填 key、也不代管密钥**，行为和官方 `dsh web` 完全一致：
+
+- 新用户第一次打开窗口，会进入 DSH 自带的「填 API key」引导（设置 → Models），填一次即存；
+- 也可以走官方环境变量 `DEEPSEEK_API_KEY`（自定义网关再加 `DEEPSEEK_BASE_URL`），桌面壳 spawn DSH 时会继承当前环境变量。
+
 ## 运行（开发模式）
 
 ```powershell
