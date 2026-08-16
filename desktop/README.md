@@ -6,11 +6,13 @@
 
 ```powershell
 cd desktop
-pnpm install          # 安装 Electron + @deepseek-ai/dsh（内嵌 Node 运行器用）
+pnpm install          # 安装 Electron（首次会下载 ~190MB 二进制）
 pnpm start
 ```
 
-首次启动会做「首次引导」：确保 `web` profile 存在、安装 `dsh-ui-customizer` 插件、登记 loader；之后起服务开窗口。
+开发模式用系统 `npx @deepseek-ai/dsh` 拉起服务（复用你已有的 npx 缓存与 `~/.dsh/profiles/web`），不需要在 `desktop/` 里再装一遍 DSH。
+
+首次启动会做「首次引导」：检查 `web` profile，缺插件才 `dsh plugin add`（幂等，已装则跳过）、登记 loader；之后起服务开窗口。
 
 ## 打包分发
 
@@ -19,8 +21,7 @@ pnpm pack              # 仅生成未打包目录（快速验证）
 pnpm dist              # 生成 Windows NSIS / macOS dmg / Linux AppImage
 ```
 
-- 打包后用 **Electron 内嵌 Node**（`ELECTRON_RUN_AS_NODE=1`）跑 `@deepseek-ai/dsh/lib/bin.js`，不再依赖系统 node/npx。
-- `asarUnpack` 把 `@deepseek-ai/**` 解出 asar，避免 DSH 的 ESM 动态 import 在 asar 内失败。
+- 打包前需把 `@deepseek-ai/dsh` 加回 `dependencies`（内嵌 Node 运行器才能解析到 `lib/bin.js`）；`asarUnpack` 会把 `@deepseek-ai/**` 解出 asar，避免 DSH 的 ESM 动态 import 在 asar 内失败。
 - 自动更新走 `electron-updater` + GitHub Releases（`build.publish` 已指向 `Final-LX/dsh-ui-customizer`）。发版时用 `GH_TOKEN` 触发 electron-builder 上传 artifacts。
 
 ## 环境变量
@@ -41,7 +42,9 @@ pnpm dist              # 生成 Windows NSIS / macOS dmg / Linux AppImage
 
 ## 已知限制
 
+- **运行器回退**：开发模式用 `npx`；打包模式才用内嵌 Node（需在 `dependencies` 加回 `@deepseek-ai/dsh` 并 `asarUnpack`）。
 - **首次引导需要 pnpm**：`dsh plugin add` 转发给 pnpm 安装插件。开发模式没问题；打包版若要全新安装插件，机器上需有 pnpm（或事先已初始化好 `~/.dsh/profiles/web`）。
+- **pnpm 11 会拦 electron 的 postinstall**：仓库已带 `desktop/pnpm-workspace.yaml`（`allowBuilds: electron: true`），首次 `pnpm install` 后若报 `ERR_PNPM_IGNORED_BUILDS`，跑一次 `pnpm rebuild electron` 下载二进制。
 - 托盘图标是占位图标（`assets/icon.png`，由 `scripts/gen-icon.cjs` 生成），可自行替换成正式图标。
 - 关窗默认**最小化到托盘**（不退出），在托盘菜单里「退出」才会真正结束进程；退出时用 `taskkill /T` 回收整个 DSH 进程树。
 - 安全边界保持 `contextIsolation`/`sandbox`/`webSecurity` 全开，未向渲染进程暴露任何 Node/IPC 能力。

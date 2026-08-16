@@ -72,6 +72,15 @@ function runDshSync(args) {
 }
 
 // ---------- 首次引导 ----------
+function profileManifest() {
+  const pkgPath = path.join(DS_HOME, "profiles", PROFILE, "package.json");
+  try { return JSON.parse(fs.readFileSync(pkgPath, "utf8")); } catch (e) { return null; }
+}
+function isPluginInstalled(name) {
+  const m = profileManifest();
+  return !!(m && m.dependencies && m.dependencies[name] !== undefined);
+}
+
 function registerLoader(patchPath) {
   let content;
   try { content = fs.readFileSync(patchPath, "utf8"); } catch (e) { content = "[]\n"; }
@@ -83,15 +92,18 @@ function registerLoader(patchPath) {
   log(`cordis.patch.yml 已登记 loader（${patchPath}）`);
 }
 
-// 幂等：profile 已初始化、插件已装、loader 已登记时是 no-op
+// 幂等：已安装/已登记时是 no-op（每次启动只做检查，不重复 pnpm add）
 function ensureProfile() {
   const patchPath = path.join(DS_HOME, "profiles", PROFILE, "cordis.patch.yml");
-  log(`引导 profile "${PROFILE}"（首次可能需要几分钟，含 pnpm 安装/原生构建）...`);
-  const add1 = runDshSync(["plugin", "--profile", PROFILE, "add", CUSTOMIZER_URL]);
-  if (add1 !== 0) throw new Error(`安装 ${CUSTOMIZER_URL} 失败（exit ${add1}）`);
-  if (process.env.DSH_WEB_UI === "1") {
-    const add2 = runDshSync(["plugin", "--profile", PROFILE, "add", WEB_UI_PKG]);
-    if (add2 !== 0) throw new Error(`安装 ${WEB_UI_PKG} 失败（exit ${add2}）`);
+  if (!isPluginInstalled("dsh-ui-customizer")) {
+    log(`引导 profile "${PROFILE}"：安装 dsh-ui-customizer（首次可能需要几分钟）...`);
+    const code = runDshSync(["plugin", "--profile", PROFILE, "add", CUSTOMIZER_URL]);
+    if (code !== 0) throw new Error(`安装 ${CUSTOMIZER_URL} 失败（exit ${code}）`);
+  }
+  if (process.env.DSH_WEB_UI === "1" && !isPluginInstalled(WEB_UI_PKG)) {
+    log(`引导 profile "${PROFILE}"：安装 ${WEB_UI_PKG} ...`);
+    const code2 = runDshSync(["plugin", "--profile", PROFILE, "add", WEB_UI_PKG]);
+    if (code2 !== 0) throw new Error(`安装 ${WEB_UI_PKG} 失败（exit ${code2}）`);
   }
   registerLoader(patchPath);
 }
@@ -99,7 +111,7 @@ function ensureProfile() {
 // ---------- 服务启动 ----------
 function startServer() {
   return new Promise((resolve, reject) => {
-    const args = ["web", "--profile", PROFILE, "--port", PORT];
+    const args = ["--profile", PROFILE, "--port", PORT];
     serverChild = spawn(runner.cmd, [...runner.prefix, ...args], {
       env: runner.env,
       windowsHide: true,
