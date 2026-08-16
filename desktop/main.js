@@ -10,22 +10,27 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 
+// 修复外部截图/录屏（OBS、Snipping Tool 等）捕获到窗口全白/高亮：
+// 禁用 GPU 硬件加速，改用软件渲染（DSH 是 Web UI，软件渲染足够流畅）。
+app.disableHardwareAcceleration();
+
 // ---------- 配置 ----------
 const PROFILE = process.env.DSH_PROFILE || "web";   // 复用 web profile（含 web-app 模板）
-// 必须固定端口：localStorage / IndexedDB 按 origin（含端口）隔离，端口一变数据就“消失”。
-// 用 3099 避开浏览器常用的 3080，防止和浏览器版 dsh 抢端口。
-const PORT = process.env.DSH_PORT || "3099";
+// 端口用 3080（与官方 `dsh web` 一致）：桌面端和网页端共用同一个 DSH 实例，
+// 会话实时同步、也不会两个进程并发写同一份会话日志导致 Zstandard 记录撕裂。
+const PORT = process.env.DSH_PORT || "3080";
 const START_TIMEOUT_MS = 60000;
 const CUSTOMIZER_URL = "git+https://github.com/Final-LX/dsh-ui-customizer";
 const WEB_UI_PKG = "@linxin666/dsh-web-ui-all";     // 可选：全家桶（env DSH_WEB_UI=1 时安装）
 const DS_HOME = process.env.DSH_HOME || path.join(os.homedir(), ".dsh");
 const LOG_FILE = path.join(DS_HOME, "desktop.log");
-const ICON_PATH = path.join(__dirname, "assets", "icon.png");
+const ICON_PATH = path.join(__dirname, "assets", "icon.ico");
 
 let serverChild = null;
 let win = null;
 let tray = null;
 let webUrl = null;
+let ownsServer = false;   // 是否由本应用自己 spawn 的 DSH（复用的实例退出时不杀）
 let quitting = false;   // 区分“用户退出”与“服务意外崩溃”
 
 // ---------- 日志 ----------
@@ -161,11 +166,13 @@ function startServer() {
     // 已有 DSH 实例在跑 → 直接复用，不重复起服务
     if (await probeExistingDsh()) {
       webUrl = `http://127.0.0.1:${PORT}`;
+      ownsServer = false;
       log(`检测到已有 DSH 实例 ${webUrl}，直接复用`);
       resolve(webUrl);
       return;
     }
 
+    ownsServer = true;
     const args = ["--profile", PROFILE, "--port", PORT];
     serverChild = spawn(runner.cmd, [...runner.prefix, ...args], {
       env: runner.env,
@@ -235,6 +242,7 @@ function createWindow() {
     minHeight: 640,
     backgroundColor: "#111318",
     title: "DSH",
+    icon: ICON_PATH,                    // 任务栏/Alt-Tab 窗口图标
     frame: false,                       // macOS 风格：自绘红绿灯，无系统标题栏
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
@@ -306,6 +314,7 @@ function createTray() {
   tray.setToolTip("DSH 桌面客户端");
   const menu = Menu.buildFromTemplate([
     { label: "显示窗口", click: () => { if (win) { win.show(); win.focus(); } } },
+    { label: "刷新窗口", click: () => { if (win) { win.reload(); } } },
     { type: "separator" },
     { label: "打开日志", click: () => shell.openPath(LOG_FILE) },
     { label: "退出", click: () => { quitting = true; app.quit(); } }
@@ -317,14 +326,17 @@ function createTray() {
 // ---------- 退出回收 ----------
 function shutdown() {
   if (!serverChild) return;
+  const child = serverChild;
+  serverChild = null;
+  // 只回收本应用自己 spawn 的 DSH；复用的网页端实例不杀，避免误伤正在用的会话
+  if (!ownsServer) return;
   try {
     if (process.platform === "win32") {
-      require("node:child_process").execSync(`taskkill /pid ${serverChild.pid} /T /F`, { stdio: "ignore" });
+      require("node:child_process").execSync(`taskkill /pid ${child.pid} /T /F`, { stdio: "ignore" });
     } else {
-      serverChild.kill("SIGTERM");
+      child.kill("SIGTERM");
     }
   } catch (e) { /* 进程可能已退出 */ }
-  serverChild = null;
 }
 
 // ---------- 生命周期 ----------
