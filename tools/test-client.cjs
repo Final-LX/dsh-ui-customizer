@@ -137,6 +137,7 @@ assert(style.textContent.includes("background-image:url("), "缺背景图");
 assert(style.textContent.includes("border-radius:10px"), "缺圆角");
 assert(style.textContent.includes("data-diy-range"), "缺自定义滑块样式");
 assert(style.textContent.includes("-webkit-slider-thumb"), "缺滑块拇指样式");
+assert(style.textContent.includes("label[data-diy-upload]:hover"), "缺上传控件悬停样式");
 
 // ---- 渲染 + 收集 + flush ----
 const component = itemReg.component;
@@ -145,6 +146,7 @@ function collect(node, out) {
   if (node.type === "input") out.push({ kind: node.props.type, props: node.props });
   else if (node.type === "select") out.push({ kind: "select", props: node.props });
   else if (node.type === "span" && node.props && node.props["data-switch"]) out.push({ kind: "switch", props: node.props });
+  else if (node.type === "label" && node.props && node.props["data-diy-upload"] === "") out.push({ kind: "upload", props: node.props });
   else if (node.type === "button") {
     const text = Array.isArray(node.children) && node.children.length && typeof node.children[0] === "string" ? node.children[0] : "";
     out.push({ kind: "button", props: node.props, text });
@@ -174,6 +176,7 @@ assert(!localStorageStore["dsh-ui-customizer:config:v3"], "初始不应自动持
 // ---- 滑块：带 data 属性 + 填充进度 ----
 const range0 = byType("range")[0];
 assert(range0["data-diy-range"] === "" && typeof range0.style["--diy-fill"] === "string", "滑块缺少 data 属性或填充进度");
+assert(byType("upload").length === 1, "上传控件数量: " + byType("upload").length);
 
 // ---- 试穿：改品牌色 → 立即生效但不持久化 ----
 byType("color")[0].onChange({ target: { value: "#111111" } });
