@@ -1,0 +1,14 @@
+{
+  "name": "dsh-ui-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "DSH 桌面客户端：本地启动 dsh web 服务并用原生窗口打开（配合 dsh-ui-customizer 主题插件）",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  }
+}

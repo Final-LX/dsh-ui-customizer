@@ -2,7 +2,7 @@
 
 一个用于 [`dsh web`](https://github.com/deepseek-ai/deepseek-harness) 的全方面 DIY 主题插件。
 不改任何源码，装进 web profile 后，在 **设置 → DIY 主题** 里实时调整配色、字体、背景、圆角，
-配置持久化到浏览器 localStorage。
+配置持久化到浏览器 localStorage。另带一个 **Electron 桌面壳**（`desktop/`），可把 DSH 界面包成独立窗口。
 
 ## 特性
 
@@ -94,6 +94,18 @@ node tools/test-render.cjs   # 真实 React 渲染测试
 node tools/test-idb.cjs      # IndexedDB 媒体存储：上传→引用→刷新恢复
 ```
 
+Token 兼容性检查（需先装官方 DSH 拉取 `dsh-web-frontend` 的 dist CSS，CI 里跑）：
+
+```powershell
+pnpm add -D --ignore-scripts "@deepseek-ai/dsh@latest"
+node tools/test-tokens.cjs   # 逐个核对覆盖的 --dsw-* / --ds-* token 是否仍存在于官方 dist
+```
+
+## 桌面 App 与 CI（同步官方更新）
+
+- **桌面壳**：`desktop/` 里的 Electron 客户端，本地起 `dsh web` 并开原生窗口，详见 `desktop/README.md`。
+- **CI**：`.github/workflows/ci.yml` 用 GitHub Actions 跑「官方 latest + 固定版」双矩阵，执行上面的测试 + token 比对；每天 UTC 03:00 定时跑，官方 RC 版契约一变（token 改名/删除）就会红灯，能抢在用户遇到前修复。
+
 ## 换壁纸
 
 ```powershell
@@ -118,12 +130,15 @@ dsh-ui-customizer/
 ├── install.ps1           # 一键安装
 ├── docs/                 # 截图（README 引用）
 ├── assets/wallpaper.txt  # 壁纸 data URI（set-wallpaper.cjs 生成）
+├── .github/workflows/ci.yml  # CI：官方 latest + 固定版矩阵 + token 比对
+├── desktop/              # Electron 桌面壳（main.js + package.json + README）
 ├── tools/
 │   ├── set-wallpaper.cjs    # 换壁纸（压缩 + 内嵌）
 │   ├── inject-wallpaper.cjs # 仅重新内嵌 assets/wallpaper.txt
 │   ├── test-client.cjs      # 无头测试
 │   ├── test-render.cjs      # 真实 React 渲染测试
-│   └── test-idb.cjs         # IndexedDB 媒体存储测试
+│   ├── test-idb.cjs         # IndexedDB 媒体存储测试
+│   └── test-tokens.cjs      # token 兼容性检查（对比官方 dist）
 └── lib/
     ├── index.js          # 宿主侧 no-op 入口
     └── client.js         # 浏览器 bundle：设置面板 + 主题 + CSS

@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # 每天 UTC 03:00 跑一次，盯住官方最新版的契约变化
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: dsh ${{ matrix.dsh-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # latest = 官方最新版（RC 阶段契约易变，重点盯它）；再固定一个已知可用版本兜底
+        dsh-version: ["latest", "0.1.0-rc.6"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      # 只为了拉 dsh-web-frontend 的 dist CSS 做 token 比对，--ignore-scripts 跳过原生构建
+      - name: 安装官方 DSH
+        run: pnpm add -D --ignore-scripts "@deepseek-ai/dsh@${{ matrix.dsh-version }}"
+
+      - name: 单元测试（mock 环境）
+        run: node tools/test-client.cjs && node tools/test-render.cjs && node tools/test-idb.cjs
+
+      - name: Token 兼容性检查（对比官方 dist）
+        run: node tools/test-tokens.cjs
