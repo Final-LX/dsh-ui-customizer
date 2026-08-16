@@ -8,7 +8,7 @@
 
 - **配色**：8 套皮肤（一键套用整套配色）+ 品牌/强调/成功/警告/错误 5 个取色器，从 5 色派生语义 token + 中性色调（蓝灰/冷灰/暖灰/石墨）统一派生文字/边框/代码块/引用色
 - **字体**：界面字体 + 代码字体（下拉选择）+ 整体缩放 80–140% + 字号缩放 80–130%
-- **背景**：内置壁纸 / 上传图片（前端压缩到 1920px JPEG）/ 图片 URL / **视频背景（mp4 上传或 URL）** / 面板通透度 / 毛玻璃
+- **背景**：内置壁纸 / 上传图片（前端压缩到 1920px JPEG）/ 图片 URL / **视频背景（mp4 上传或 URL）** / 面板通透度 / 毛玻璃；上传的图片/视频存 **IndexedDB**，配置只存 `idb:` 引用，刷新后自动恢复
 - **组件**：圆角 0–24px + 阴影层级（无/轻/标准/强）
 - **皮肤中心**：选择即试穿、满意再应用、未保存可还原
 - **我的方案**：把当前整套配置保存成命名方案，一键快捷切换
@@ -49,7 +49,7 @@ npx @deepseek-ai/dsh web
 
 顶部有「启用 DIY 主题」总开关：关闭后本插件完全不生效（覆盖全部撤销，方便让 dsh-web-ui 的皮肤中心接管），打开后恢复。
 
-所有改动都是「试穿」：实时预览但不落盘。满意后点右上角「应用」保存，「还原」撤销未保存的更改。配置存在浏览器 localStorage（`dsh-ui-customizer:config:v3`）。
+所有改动都是「试穿」：实时预览但不落盘。满意后点右上角「应用」保存，「还原」撤销未保存的更改。配置存在浏览器 localStorage（`dsh-ui-customizer:config:v3`）；上传的图片/视频本体存在浏览器 **IndexedDB**（`dsh-ui-customizer` / `media`），配置里只存 `idb:` 引用，所以刷新后能自动恢复，也不占 localStorage 的 5MB 配额。
 
 | 分组 | 控件 | 说明 |
 |---|---|---|
@@ -60,7 +60,8 @@ npx @deepseek-ai/dsh web
 | 字体 | 界面字体 / 代码字体 | 下拉选择预设字体栈 |
 | | 整体缩放 | 80–140%，整体放大缩小界面 |
 | 背景 | 使用内置壁纸 | 开关内嵌壁纸 |
-| | 上传背景图 | 选本地图片，前端压缩后应用 |
+| | 上传背景图 | 选本地图片，前端压缩后存 IndexedDB，配置存 idb: 引用 |
+| | 上传视频 | 选 mp4，存 IndexedDB，刷新后自动恢复 |
 | | 背景 URL | 填网络图或 data URI |
 | | 面板通透度 | 0–100%，越小背景越清楚 |
 | | 毛玻璃强度 | 0–30px，0 为关闭模糊（最省性能） |
@@ -90,6 +91,7 @@ npm test
 # 等价于：
 node tools/test-client.cjs   # 无头测试：factory+apply+渲染+防抖+上传
 node tools/test-render.cjs   # 真实 React 渲染测试
+node tools/test-idb.cjs      # IndexedDB 媒体存储：上传→引用→刷新恢复
 ```
 
 ## 换壁纸
@@ -120,7 +122,8 @@ dsh-ui-customizer/
 │   ├── set-wallpaper.cjs    # 换壁纸（压缩 + 内嵌）
 │   ├── inject-wallpaper.cjs # 仅重新内嵌 assets/wallpaper.txt
 │   ├── test-client.cjs      # 无头测试
-│   └── test-render.cjs      # 真实 React 渲染测试
+│   ├── test-render.cjs      # 真实 React 渲染测试
+│   └── test-idb.cjs         # IndexedDB 媒体存储测试
 └── lib/
     ├── index.js          # 宿主侧 no-op 入口
     └── client.js         # 浏览器 bundle：设置面板 + 主题 + CSS

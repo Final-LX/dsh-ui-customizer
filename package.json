@@ -17,7 +17,7 @@
     "README.md"
   ],
   "scripts": {
-    "test": "node tools/test-client.cjs && node tools/test-render.cjs",
+    "test": "node tools/test-client.cjs && node tools/test-render.cjs && node tools/test-idb.cjs",
     "wallpaper": "node tools/set-wallpaper.cjs"
   },
   "dsh": {
