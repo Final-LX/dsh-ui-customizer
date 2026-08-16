@@ -4,7 +4,7 @@
 //   → 首次引导（确保 profile 存在 + 插件已装 + loader 已登记）
 //   → 固定端口起 `dsh web` → 解析就绪地址 → 开窗口
 //   → 日志落盘 + 崩溃恢复 + 托盘。
-const { app, BrowserWindow, Tray, Menu, nativeImage, dialog, shell } = require("electron");
+const { app, BrowserWindow, Tray, Menu, nativeImage, dialog, shell, ipcMain } = require("electron");
 const { spawn, spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
@@ -235,8 +235,9 @@ function createWindow() {
     minHeight: 640,
     backgroundColor: "#111318",
     title: "DSH",
-    // 使用系统原生窗口边框/标题栏：跟随系统主题，最小化/最大化/关闭按钮原生呈现，侧边栏全高显示
+    frame: false,                       // macOS 风格：自绘红绿灯，无系统标题栏
     webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -244,6 +245,51 @@ function createWindow() {
     }
   });
   win.loadURL(webUrl);
+  // 顶部一条 36px 标题栏，左上角 macOS 红绿灯（关闭/最小化/最大化），背景/边框跟随主题，无多余文字
+  win.webContents.on("dom-ready", () => {
+    try {
+      win.webContents.insertCSS(`
+        #__ds_titlebar {
+          position: fixed; top: 0; left: 0; right: 0; height: 36px; z-index: 2147483647;
+          display: flex; align-items: center;
+          background: var(--dsw-alias-bg-base, #111318);
+          border-bottom: 1px solid var(--dsw-alias-border-l1, rgba(255,255,255,.06));
+          -webkit-app-region: drag;
+          padding: 0 12px; box-sizing: border-box;
+        }
+        #__ds_titlebar .__ds_traffic { display: flex; gap: 8px; -webkit-app-region: no-drag; }
+        #__ds_titlebar .__ds_traffic button {
+          width: 12px; height: 12px; border-radius: 50%; border: none; padding: 0;
+          cursor: pointer; display: flex; align-items: center; justify-content: center;
+          font-size: 9px; line-height: 1; color: transparent; font-family: inherit;
+        }
+        #__ds_titlebar .__ds_traffic button:hover { color: rgba(0,0,0,.55); }
+        #__ds_close { background: #ff5f57; }
+        #__ds_min   { background: #febc2e; }
+        #__ds_max   { background: #28c840; }
+
+        html, body { height: 100%; }
+        body { padding-top: 36px !important; box-sizing: border-box !important; overflow: hidden !important; }
+        #root { height: 100% !important; margin: 0 !important; }
+      `);
+      win.webContents.executeJavaScript(`
+        (function () {
+          if (document.getElementById("__ds_titlebar")) return;
+          var bar = document.createElement("div");
+          bar.id = "__ds_titlebar";
+          bar.innerHTML = '<span class="__ds_traffic">'
+            + '<button id="__ds_close" title="关闭">×</button>'
+            + '<button id="__ds_min" title="最小化">−</button>'
+            + '<button id="__ds_max" title="最大化">+</button>'
+            + '</span>';
+          document.body.prepend(bar);
+          document.getElementById("__ds_close").addEventListener("click", function () { window.dshWin.close(); });
+          document.getElementById("__ds_min").addEventListener("click", function () { window.dshWin.minimize(); });
+          document.getElementById("__ds_max").addEventListener("click", function () { window.dshWin.toggleMaximize(); });
+        })();
+      `).catch(() => {});
+    } catch (e) {}
+  });
   win.on("close", (e) => {
     if (!quitting && tray) {   // 关窗 = 最小化到托盘
       e.preventDefault();
@@ -290,6 +336,11 @@ if (!gotLock) {
   app.on("second-instance", () => {
     if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); }
   });
+
+  // macOS 风格红绿灯按钮的窗口控制
+  ipcMain.on("win:minimize", () => { if (win) win.minimize(); });
+  ipcMain.on("win:toggle-maximize", () => { if (!win) return; if (win.isMaximized()) win.unmaximize(); else win.maximize(); });
+  ipcMain.on("win:close", () => { if (win) win.close(); });
 
   app.whenReady().then(async () => {
     log("==== 启动 ====");
