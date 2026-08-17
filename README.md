@@ -1,15 +1,71 @@
-# dsh-ui-customizer
+# DSH 桌面客户端 + DIY 主题
 
-面向 [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) 的主题定制插件 + Electron 桌面客户端。
+给 [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) 加一套「DIY 主题」定制面板，并提供一个开箱即用的桌面客户端。
 
-- **插件（dsh-ui-customizer，v1.0.0）**：不改任何源码，装进 web profile 后，在「设置 → DIY 主题」里实时调整配色、字体、背景、圆角、阴影等，配置持久化在浏览器。
-- **桌面端（desktop/，v0.1.5）**：把 `dsh web` 包成独立原生窗口——macOS 风格红绿灯标题栏、跟随主题、托盘常驻，并且与网页端**共享同一个 DSH 实例**，会话实时同步。**完全自包含**：全新机器无需 Node / pnpm / git，首启也无需联网。
+> **不需要会命令行**：下载 exe → 双击安装 → 打开就能用。
+
+## 这是什么
+
+- **DIY 主题（dsh-ui-customizer）**：在「设置 → DIY 主题」里改配色、字体、背景、圆角、阴影，改完立即生效，配置保存在浏览器里。
+- **桌面客户端（desktop/）**：把 DSH 网页界面包成一个独立窗口——macOS 风格红绿灯标题栏、托盘常驻，并且和网页版**共享同一个 DSH 实例**，会话实时同步。
+
+## 下载安装（推荐：桌面客户端）
+
+1. 打开 [Releases](https://github.com/Final-LX/dsh-ui-customizer/releases/latest) 页面，下载 `DSH-Setup-<版本>.exe`；
+2. 双击运行，在安装向导里点「安装」（可改安装目录）；
+3. 若弹 Windows SmartScreen 提示，点「更多信息」→「仍要运行」（因为安装包未签名）；
+4. 装完勾选「运行 DSH」直接启动，或从桌面/开始菜单的「DSH」快捷方式启动。
+
+**完全离线自包含**：不需要装 Node、pnpm、git，首启也不需要联网。
+
+- 最新版：<https://github.com/Final-LX/dsh-ui-customizer/releases/latest>
+- 全部版本：<https://github.com/Final-LX/dsh-ui-customizer/releases>
+
+## 使用
+
+1. 打开桌面客户端（或网页版 `dsh web`）；
+2. 右上角「设置」→ 左侧「DIY 主题」；
+3. 按分组调整，改完立即预览；
+4. 点「应用」保存，「还原」撤销未保存的更改。
+
+### 能调什么
+
+| 分组 | 控件 | 说明 |
+|---|---|---|
+| （总开关） | 启用 DIY 主题 | 关闭后撤销全部覆盖 |
+| 皮肤中心 | 8 张色板卡片 | 点选即试穿整套配色/通透度/毛玻璃/圆角 |
+| 配色 | 品牌/强调/成功/警告/错误 | 5 个取色器，带 hex 值 |
+| | 中性色调 | 蓝灰/冷灰/暖灰/石墨 |
+| 字体 | 界面字体 / 代码字体 | 下拉选择预设字体栈 |
+| | 整体缩放 | 80–140% |
+| | 字号缩放 | 80–130% |
+| 背景 | 使用内置壁纸 | 开关内嵌壁纸 |
+| | 上传背景图 | 本地图片，压缩后存 IndexedDB |
+| | 上传视频 | mp4，存 IndexedDB，刷新后恢复 |
+| | 背景 URL | 网络图或 data URI |
+| | 面板通透度 | 0–100% |
+| | 毛玻璃强度 | 0–30px，0 关闭（最省性能） |
+| 组件 | 阴影层级 | 无/轻/标准/强 |
+| | 圆角 | 0–24px |
+| 我的方案 | 命名方案 | 整套配置存成方案，一键切换 |
+
+### 截图
+
+![整体效果](docs/screenshot-overview.png)
+
+![DIY 主题设置面板](docs/screenshot-panel.png)
+
+## 常见问题
+
+- **SmartScreen 提示「Windows 已保护你的电脑」？** 点「更多信息」→「仍要运行」。这是未签名程序的正常提示，不影响使用。
+- **桌面版和网页版数据同步吗？** 会话（聊天记录）同步——两者共用同一个 DSH 实例和 3080 端口；但主题配置存在各自浏览器的 localStorage 里，不互通。
+- **主题配置和上传的图片存哪？** 都存在浏览器本地（localStorage + IndexedDB），不上传到 DSH 服务器端。
 
 ---
 
-## 快速开始
+## 只用插件（网页端，进阶）
 
-### 方式 A：只用插件（网页端）
+如果你已经会用命令行，且只想在网页版用主题插件、不装桌面客户端：
 
 ```powershell
 dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
@@ -29,91 +85,24 @@ npx @deepseek-ai/dsh web
 
 打开右上角「设置 → DIY 主题」即可开始定制。
 
-### 方式 B：桌面端（打包好的 exe）
-
-下载 `DSH-Setup-<版本>.exe` 安装包，双击运行安装向导，按提示点「安装」即可。**无需安装 Node / pnpm / git，首启也无需联网**（整套 DSH 运行时与主题插件全部随包内置）：
-
-- 最新版：<https://github.com/Final-LX/dsh-ui-customizer/releases/latest>
-- 全部版本：<https://github.com/Final-LX/dsh-ui-customizer/releases>
-
-安装包为未签名程序，首次运行 SmartScreen 会提示，点「仍要运行」即可。装完会在桌面和开始菜单生成「DSH」快捷方式，可直接双击启动。详见 [`desktop/README.md`](desktop/README.md)。
-
 ---
 
-## 插件
+## 开发者
 
-### 特性
+> 普通用户无需看这里。下面内容面向想改代码、跑测试、重新打包的人。
 
-- **配色**：8 套皮肤（一键整套配色）+ 品牌/强调/成功/警告/错误 5 个取色器 + 中性色调（蓝灰/冷灰/暖灰/石墨），派生文字、边框、代码块、引用色
-- **字体**：界面字体 + 代码字体（下拉选择）+ 整体缩放 80–140% + 字号缩放 80–130%
-- **背景**：内置壁纸 / 上传图片（前端压缩到 1920px JPEG）/ 图片 URL / **视频背景（mp4 上传或 URL）** / 面板通透度 / 毛玻璃
-- **组件**：圆角 0–24px + 阴影层级（无/轻/标准/强）
-- **皮肤中心**：点选即试穿、满意再应用、未保存可还原
-- **我的方案**：整套配置保存成命名方案，一键快捷切换
-- **可读性**：覆盖层（对话框/菜单/输入/提示）固定高不透明，通透度只作用于环境背景
+### 桌面端开发与打包
 
-### 截图
+```powershell
+cd desktop
+npm install    # 安装 Electron（首次下载 ~190MB 二进制）
+npm start      # 开发模式运行
+npm run dist   # 生成 Windows 安装包
+```
 
-![整体效果](docs/screenshot-overview.png)
+完整说明见 [`desktop/README.md`](desktop/README.md)。
 
-![DIY 主题设置面板](docs/screenshot-panel.png)
-
-### 使用
-
-打开 Web GUI → 右上角 **设置** → 左侧导航 **DIY 主题**，按分组调整。
-
-顶部「启用 DIY 主题」是总开关：关闭后本插件完全不生效，打开后恢复。
-
-所有改动都是「试穿」：实时预览但不落盘；点右上角「应用」保存，「还原」撤销未保存的更改。
-
-| 分组 | 控件 | 说明 |
-|---|---|---|
-| （总开关） | 启用 DIY 主题 | 关闭后撤销全部覆盖 |
-| 皮肤中心 | 8 张色板卡片 | 点选即试穿整套配色/通透度/毛玻璃/圆角 |
-| 配色 | 品牌/强调/成功/警告/错误 | 5 个取色器，带 hex 值 |
-| | 中性色调 | 蓝灰/冷灰/暖灰/石墨 |
-| 字体 | 界面字体 / 代码字体 | 下拉选择预设字体栈 |
-| | 整体缩放 | 80–140% |
-| | 字号缩放 | 80–130% |
-| 背景 | 使用内置壁纸 | 开关内嵌壁纸 |
-| | 上传背景图 | 本地图片，压缩后存 IndexedDB |
-| | 上传视频 | mp4，存 IndexedDB，刷新后恢复 |
-| | 背景 URL | 网络图或 data URI |
-| | 面板通透度 | 0–100% |
-| | 毛玻璃强度 | 0–30px，0 关闭（最省性能） |
-| 组件 | 阴影层级 | 无/轻/标准/强 |
-| | 圆角 | 0–24px |
-
----
-
-## 桌面端
-
-`desktop/` 里的 Electron 客户端，把 DSH 界面包成独立窗口。完整说明见 [`desktop/README.md`](desktop/README.md)，要点：
-
-- **向导式安装**：安装包带「欢迎 → 安装 → 完成」向导页，进度清晰，装完可选「运行 DSH」，并自动创建桌面/开始菜单快捷方式。
-- **启动画面**：首次启动时先显示「正在启动」等待画面，DSH 就绪后自动进入主界面，不会黑屏干等。
-- **macOS 风格标题栏**：左上角红绿灯（关闭/最小化/最大化），背景/边框跟随 DIY 主题，无多余文字。
-- **与网页端共享实例**：端口统一为 **3080**（和官方 `dsh web` 一致）。桌面端启动时会探测到已有的 DSH 实例并直接复用——会话实时同步，也不会两个进程并发写会话日志。
-- **托盘常驻**：渐变图标，关窗最小化到托盘；退出时只回收自己启动的 DSH，不误杀复用的网页端实例。
-- **自包含**：整套 DSH 运行时与主题插件随包内置，首启离线，目标机器无需 Node/pnpm/git。
-- **日志/崩溃恢复**：日志落盘到 `~/.dsh/desktop.log`；DSH 意外退出会弹窗让用户选择重启/退出。
-- **API key 与官方一致**：不自动填、不代管密钥，走 DSH 自带引导或 `DEEPSEEK_API_KEY` 环境变量。
-
----
-
-## 数据与存储
-
-| 数据 | 位置 | 说明 |
-|---|---|---|
-| DIY 配置 / 方案 | 浏览器 localStorage | `dsh-ui-customizer:config:v3`、`dsh-ui-customizer:schemes` |
-| 上传的图片/视频 | 浏览器 IndexedDB | 库 `dsh-ui-customizer`、store `media`，配置里只存 `idb:` 引用 |
-| DSH profile/会话/日志 | `~/.dsh/` | 服务端数据 |
-
-上传的图片/视频存在 IndexedDB 而非 localStorage，不受 5MB 配额限制，刷新后自动恢复。
-
----
-
-## 测试
+### 测试
 
 ```powershell
 npm test
@@ -130,11 +119,11 @@ pnpm add -D --ignore-scripts "@deepseek-ai/dsh@latest"
 node tools/test-tokens.cjs
 ```
 
-## CI（同步官方更新）
+### CI（同步官方更新）
 
 `.github/workflows/ci.yml` 用 GitHub Actions 跑「官方 latest + 固定版」双矩阵，执行上面的测试 + token 比对；每天 UTC 03:00 定时跑。官方还是 RC 阶段、契约（token 名、`dsh.client`、DOM 类名）易变，红灯了就说明要核对升级。
 
-## 换壁纸
+### 换壁纸
 
 ```powershell
 npm run wallpaper -- "C:\path\to\image.png"
@@ -142,13 +131,13 @@ npm run wallpaper -- "C:\path\to\image.png"
 
 图片压成 1920px JPEG，写入 `assets/wallpaper.txt` 并内嵌进 `lib/client.js`，然后重新 `add` + 重启。
 
-## 关键契约（跨 DSH 版本升级时核对）
+### 关键契约（跨 DSH 版本升级时核对）
 
 - `exports` 必须暴露 `"./package.json"`：`client-modules` 靠 `require.resolve('<pkg>/package.json')` 读 `dsh.client`，缺失会被判为「非客户端包」。
 - 客户端 bundle 是 classic `<script>`，必须以 `window.__ModuleLoader__.load({...})` 注册 factory。
 - `package.json` 的 `dsh.client` 需含 `{ platform: "web", immediately: true, inject: [...] }`。
 
-## 目录结构
+### 目录结构
 
 ```
 dsh-ui-customizer/
