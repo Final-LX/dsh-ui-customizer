@@ -19,8 +19,8 @@
 
 ```powershell
 cd desktop
-pnpm install   # 安装 Electron（首次下载 ~190MB 二进制）
-pnpm start
+npm install    # 安装 Electron（首次下载 ~190MB 二进制）
+npm start
 ```
 
 ## 工作原理
@@ -78,8 +78,8 @@ pnpm start
 ## 打包分发
 
 ```powershell
-pnpm pack              # 仅生成未打包目录 dist\win-unpacked（便携版，直接跑 DSH.exe）
-pnpm dist              # 生成 Windows NSIS 安装包 dist\DSH Setup 0.1.5.exe
+npm run pack           # 仅生成未打包目录 dist\win-unpacked（便携版，直接跑 DSH.exe）
+npm run dist           # 生成 Windows NSIS 安装包 dist\DSH Setup 0.1.5.exe
 ```
 
 已内置的打包坑位规避（`package.json` build 字段）：
@@ -93,14 +93,17 @@ pnpm dist              # 生成 Windows NSIS 安装包 dist\DSH Setup 0.1.5.exe
 
 - `@deepseek-ai/dsh`（完整 harness，含 dsh-base + dsh-web-app 等 bundle）随包内置；
 - `pnpm@9` 随包内置（Electron 内嵌 Node 跑 `pnpm.cjs`），仅「可选 `DSH_WEB_UI=1` 全家桶」那条路才会用到；
-- `dsh-ui-customizer` 主题插件随包内置（`file:` 依赖直接进 harness 的 node_modules），loader 直接从安装侧解析，**不再往 profile 里 `pnpm add`**——这就是首启离线的根本原因；
-- `node-addon-require-builtin-win32-x64-msvc` 作为直接依赖提升到顶层：electron-builder 会把 pnpm 铺成嵌套布局，导致这个平台二进制被塞进 `node-addon-require-builtin/` 里、原生内部加载器找不到 → DSH 必装的 HMR 报 `--expose-internals is required`。升到顶层后原生加载器恢复，HMR 与外置插件解析都正常。
+- `dsh-ui-customizer` 主题插件随包内置（`file:` 依赖直接进 node_modules），loader 直接从安装侧解析，**不再往 profile 里装任何东西**——这就是首启离线的根本原因。
 
-> 注意：上面第 4 条目前只加了 Windows 的 `win32-x64-msvc` 变体。以后要出 macOS / Linux 安装包，需照同样方式把对应平台变体（`-darwin-arm64`、`-darwin-x64`、`-linux-x64-gnu` 等）加为直接依赖。
+**为什么用 npm 而不是 pnpm**：electron-builder 的 node_modules 收集器对 pnpm 不可靠——25.x 会把 hoisted 布局铺成嵌套/残缺树（缺 `commander`、`cordis-plugin-group` 等），26.x 又会在 `pnpm list --depth Infinity` 上对这么大的 harness 直接 OOM。npm 天生扁平，electron-builder 对 npm 的处理是久经考验的主路径，所以打包侧改用 npm（`package-lock.json`）。
+
+**为什么把 19 个 `dsh-*`「服务定义」包加成直接依赖**：electron-builder 只沿 `dependencies`/`optionalDependencies` 收集，不沿 `peerDependencies`。DSH 的服务提供方把 `dsh-compaction`、`dsh-invariants`、`dsh-fs` 等作为 peer 引用，若不加成直接依赖，它们会被从生产树里丢掉，运行时 `ERR_MODULE_NOT_FOUND`。`node-addon-require-builtin-win32-x64-msvc` 也按同样思路加成直接依赖，保证原生内部加载器（HMR 与外置插件解析都要靠它）一定被带上。
+
+> 注意：`node-addon-require-builtin-*` 目前只加了 Windows 的 `win32-x64-msvc` 变体。以后要出 macOS / Linux 安装包，需照同样方式把对应平台变体（`-darwin-arm64`、`-darwin-x64`、`-linux-x64-gnu` 等）加为直接依赖。
 
 ### 发 Release
 
-1. `pnpm dist` 生成 `dist\DSH Setup 0.1.5.exe`（产物文件名带空格）。
+1. `npm run dist` 生成 `dist\DSH Setup 0.1.5.exe`（产物文件名带空格）。
 2. 把 exe 和 blockmap 重命名为连字符版（`DSH-Setup-0.1.5.exe`、`DSH-Setup-0.1.5.exe.blockmap`），与 `latest.yml` 里的 `url` 对齐——否则 electron-updater 自动更新会 404。
 3. 在 GitHub 上基于 `v0.1.5` 标签新建 Release，上传三个文件：`DSH-Setup-0.1.5.exe`、`DSH-Setup-0.1.5.exe.blockmap`、`latest.yml`。`latest` 永远指向最新版。
 
@@ -108,5 +111,4 @@ pnpm dist              # 生成 Windows NSIS 安装包 dist\DSH Setup 0.1.5.exe
 
 - **未签名**：SmartScreen 会提示，点「仍要运行」。
 - **可选全家桶需要联网**：默认首启离线；只有设 `DSH_WEB_UI=1` 时才会用内置 pnpm 联网装 `@linxin666/dsh-web-ui-all`。
-- **pnpm 11 拦 electron postinstall**：仓库带 `desktop/pnpm-workspace.yaml`（`allowBuilds: electron: true`），若 `pnpm install` 报 `ERR_PNPM_IGNORED_BUILDS`，跑 `pnpm rebuild electron`。
 - 安全边界：`contextIsolation`/`sandbox`/`webSecurity` 全开，仅通过 `preload.js` 暴露最小窗口控制 IPC。
