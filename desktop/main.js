@@ -20,7 +20,8 @@ const PROFILE = process.env.DSH_PROFILE || "web";   // 复用 web profile（含 
 // 会话实时同步、也不会两个进程并发写同一份会话日志导致 Zstandard 记录撕裂。
 const PORT = process.env.DSH_PORT || "3080";
 const START_TIMEOUT_MS = 60000;
-const CUSTOMIZER_URL = "git+https://github.com/Final-LX/dsh-ui-customizer";
+const CUSTOMIZER_GIT = "git+https://github.com/Final-LX/dsh-ui-customizer";                                  // git 方式（需 git）
+const CUSTOMIZER_TARBALL = "https://github.com/Final-LX/dsh-ui-customizer/archive/refs/heads/main.tar.gz";   // tarball 方式（免 git）
 const WEB_UI_PKG = "@linxin666/dsh-web-ui-all";     // 可选：全家桶（env DSH_WEB_UI=1 时安装）
 const DS_HOME = process.env.DSH_HOME || path.join(os.homedir(), ".dsh");
 const LOG_FILE = path.join(DS_HOME, "desktop.log");
@@ -96,12 +97,16 @@ function resolveDshRunner() {
 }
 const runner = resolveDshRunner();
 
-function runDshSync(args) {
+function runDshSync(args, envOverride) {
   const r = spawnSync(runner.cmd, [...runner.prefix, ...args], {
-    env: runner.env,
-    stdio: "inherit",
-    shell: runner.shell
+    env: envOverride || runner.env,
+    shell: runner.shell,
+    encoding: "utf8",
+    windowsHide: true
   });
+  if (r.stdout && r.stdout.trim()) log("dsh 输出：\n" + r.stdout.trimEnd());
+  if (r.stderr && r.stderr.trim()) log("dsh stderr：\n" + r.stderr.trimEnd());
+  if (r.error) log("dsh spawn 错误：" + r.error.message);
   return r.status ?? (r.error ? 1 : 0);
 }
 
@@ -126,17 +131,39 @@ function registerLoader(patchPath) {
   log(`cordis.patch.yml 已登记 loader（${patchPath}）`);
 }
 
+// 确保 pnpm 可用：PATH 里有就用；没有则用 npm 装一个本地副本（免管理员、免全局）
+function ensurePnpmEnv() {
+  if (findInPath("pnpm.cmd") || findInPath("pnpm")) return process.env;
+  const toolsDir = path.join(DS_HOME, "tools");
+  const binDir = path.join(toolsDir, "node_modules", ".bin");
+  if (!fs.existsSync(path.join(binDir, "pnpm.cmd"))) {
+    log("未检测到 pnpm，正在本地安装 pnpm 到 " + binDir + " ...");
+    const r = spawnSync("npm", ["install", "--prefix", toolsDir, "--no-audit", "--no-fund", "--no-save", "pnpm"], { shell: process.platform === "win32", encoding: "utf8", windowsHide: true });
+    if (r.status !== 0) {
+      log("npm 安装 pnpm 失败：" + ((r.stderr || "").trim() || "exit " + r.status));
+      throw new Error("自动安装 pnpm 失败，请先手动安装 Node 与 pnpm（npm i -g pnpm）后重试");
+    }
+  }
+  return { ...process.env, PATH: binDir + ";" + (process.env.PATH || "") };
+}
+
 // 幂等：已安装/已登记时是 no-op（每次启动只做检查，不重复 pnpm add）
 function ensureProfile() {
   const patchPath = path.join(DS_HOME, "profiles", PROFILE, "cordis.patch.yml");
   if (!isPluginInstalled("dsh-ui-customizer")) {
     log(`引导 profile "${PROFILE}"：安装 dsh-ui-customizer（首次可能需要几分钟）...`);
-    const code = runDshSync(["plugin", "--profile", PROFILE, "add", CUSTOMIZER_URL]);
-    if (code !== 0) throw new Error(`安装 ${CUSTOMIZER_URL} 失败（exit ${code}）`);
+    const env = ensurePnpmEnv();
+    // 先试 git 方式（需要 git），失败自动回退 tarball 方式（免 git）
+    let code = runDshSync(["plugin", "--profile", PROFILE, "add", CUSTOMIZER_GIT], env);
+    if (code !== 0) {
+      log(`git 方式安装失败（exit ${code}），改用 tarball 方式重试...`);
+      code = runDshSync(["plugin", "--profile", PROFILE, "add", CUSTOMIZER_TARBALL], env);
+    }
+    if (code !== 0) throw new Error(`安装 dsh-ui-customizer 失败（exit ${code}）。详情见日志 ${LOG_FILE}；请确认网络可用、Node 18+ 已安装。`);
   }
   if (process.env.DSH_WEB_UI === "1" && !isPluginInstalled(WEB_UI_PKG)) {
     log(`引导 profile "${PROFILE}"：安装 ${WEB_UI_PKG} ...`);
-    const code2 = runDshSync(["plugin", "--profile", PROFILE, "add", WEB_UI_PKG]);
+    const code2 = runDshSync(["plugin", "--profile", PROFILE, "add", WEB_UI_PKG], ensurePnpmEnv());
     if (code2 !== 0) throw new Error(`安装 ${WEB_UI_PKG} 失败（exit ${code2}）`);
   }
   registerLoader(patchPath);
