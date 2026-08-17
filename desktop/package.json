@@ -59,6 +59,14 @@
       ],
       "signAndEditExecutable": false
     },
+    "nsis": {
+      "oneClick": false,
+      "installerIcon": "assets/icon.ico",
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "DSH"
+    },
     "mac": {
       "target": [
         "dmg"

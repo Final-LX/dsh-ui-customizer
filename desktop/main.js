@@ -28,6 +28,7 @@ const ICON_PATH = path.join(__dirname, "assets", "icon.ico");
 let serverChild = null;
 let win = null;
 let tray = null;
+let splash = null;
 let webUrl = null;
 let ownsServer = false;   // 是否由本应用自己 spawn 的 DSH（复用的实例退出时不杀）
 let quitting = false;   // 区分“用户退出”与“服务意外崩溃”
@@ -339,6 +340,28 @@ function startServer() {
 }
 
 // ---------- 窗口 / 托盘 ----------
+// 启动阶段的小启动画面：profile 初始化 + DSH 服务就绪约 2 秒，期间给个“正在启动”的等待提示
+function createSplash() {
+  splash = new BrowserWindow({
+    width: 420,
+    height: 260,
+    frame: false,
+    resizable: false,
+    movable: true,
+    center: true,
+    alwaysOnTop: true,
+    show: false,
+    backgroundColor: "#111318",
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
+  });
+  splash.loadFile(path.join(__dirname, "splash.html"));
+  splash.once("ready-to-show", () => { if (splash) splash.show(); });
+}
+
+function closeSplash() {
+  if (splash) { try { splash.close(); } catch (e) {} splash = null; }
+}
+
 function createWindow() {
   win = new BrowserWindow({
     width: 1280,
@@ -462,9 +485,11 @@ if (!gotLock) {
   app.whenReady().then(async () => {
     log("==== 启动 ====");
     try {
+      createSplash();
       ensureProfile();
       await startServer();
       createWindow();
+      closeSplash();
       createTray();
       // 打包版检查更新（electron-updater，需配合 build.publish 与 GH_TOKEN）
       if (app.isPackaged) {
@@ -474,6 +499,7 @@ if (!gotLock) {
         } catch (e) { log("检查更新失败：" + (e && e.message ? e.message : e)); }
       }
     } catch (err) {
+      closeSplash();
       log("启动失败：" + (err && err.message ? err.message : err));
       dialog.showErrorBox("启动失败", (err && err.message ? err.message : String(err)) + "\n\n日志：" + LOG_FILE);
       app.quit();
