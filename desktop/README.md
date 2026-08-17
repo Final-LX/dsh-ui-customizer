@@ -2,18 +2,30 @@
 
 用 Electron 把 DSH 的浏览器界面包成独立原生窗口，配合 [`dsh-ui-customizer`](../README.md) 主题插件使用。
 
+- **向导式安装**：安装包带「欢迎 → 安装 → 完成」向导页，进度清晰，装完可选「运行 DSH」。
+- **启动画面**：首次启动先显示「正在启动」等待画面，DSH 就绪后自动进入主界面。
 - **macOS 风格红绿灯标题栏**：左上角红/黄/绿三个按钮，背景边框跟随 DIY 主题，无多余文字。
 - **与网页端共享实例**：端口统一 3080，会话实时同步、不并发写会话日志。
 - **托盘常驻**：渐变图标，关窗最小化到托盘，不占用任务栏。
-- **自包含、首启离线**：harness、pnpm、主题插件全部随包内置，全新机器无需 Node/pnpm/git、也无需联网即可启动。
+- **自包含、首启离线**：整套 DSH 运行时与主题插件随包内置，全新机器无需 Node/pnpm/git、也无需联网即可启动。
 - **日志落盘 + 崩溃恢复**。
 
 ## 下载安装
 
-- 最新安装包：<https://github.com/Final-LX/dsh-ui-customizer/releases/latest>
-- 全部版本：<https://github.com/Final-LX/dsh-ui-customizer/releases>
+### 安装包文件说明
 
-双击安装（未签名，SmartScreen 提示「仍要运行」）。装完启动即可。
+| 文件 | 说明 |
+|---|---|
+| `DSH-Setup-<版本>.exe` | Windows 安装程序，双击运行安装向导，装完生成桌面/开始菜单「DSH」快捷方式 |
+| `DSH-Setup-<版本>.exe.blockmap` | 增量更新用的块映射文件，自动更新时用，普通安装无需理会 |
+| `latest.yml` | 自动更新元数据（版本号 + sha512 校验值） |
+
+### 安装步骤
+
+1. 打开 <https://github.com/Final-LX/dsh-ui-customizer/releases/latest>，下载 `DSH-Setup-<版本>.exe`；
+2. 双击运行，在安装向导里点「安装」（可改安装目录）；
+3. 未签名程序，SmartScreen 会提示，点「仍要运行」；
+4. 装完勾选「运行 DSH」直接启动，或从桌面/开始菜单的「DSH」快捷方式启动。
 
 ## 运行（开发模式）
 
@@ -52,6 +64,10 @@ npm start
 
 托盘图标是品牌蓝→强调紫渐变的**多尺寸 ICO**（`assets/icon.ico`，16/24/32/48/256）。关窗默认最小化到托盘（不退出），托盘菜单「退出」才真正结束。
 
+### 启动画面
+
+启动阶段（profile 初始化 + DSH 服务就绪约 2 秒）会先弹出一个小的启动窗口：深色背景 + 转圈动画 + 「正在启动，请稍候…」。DSH 就绪后自动关闭并切入主窗口；启动失败则先关掉再弹错误框。实现：`main.js` 的 `createSplash()/closeSplash()` + `splash.html`。
+
 ## API key（与官方一致）
 
 桌面壳**不自动填 key、也不代管密钥**，行为和官方 `dsh web` 完全一致：
@@ -66,7 +82,6 @@ npm start
 | `DSH_PROFILE` | `web` | 用哪个 DSH profile（web 模板自带 web-app） |
 | `DSH_PORT` | `3080` | 与网页端共享的端口；改端口会导致会话不再同步 |
 | `DSH_HOME` | `~/.dsh` | DSH 数据目录（profile、日志也在此） |
-| `DSH_WEB_UI` | 未设 | 设为 `1` 时首次引导额外安装 `@linxin666/dsh-web-ui-all` 全家桶 |
 
 ## 数据都在哪
 
@@ -92,8 +107,7 @@ npm run dist           # 生成 Windows NSIS 安装包 dist\DSH Setup 0.1.5.exe
 安装包把整套 DSH 运行时都打了进去，目标机器**不需要装 Node / pnpm / git，首启也不需要联网**：
 
 - `@deepseek-ai/dsh`（完整 harness，含 dsh-base + dsh-web-app 等 bundle）随包内置；
-- `pnpm@9` 随包内置（Electron 内嵌 Node 跑 `pnpm.cjs`），仅「可选 `DSH_WEB_UI=1` 全家桶」那条路才会用到；
-- `dsh-ui-customizer` 主题插件随包内置（`file:` 依赖直接进 node_modules），loader 直接从安装侧解析，**不再往 profile 里装任何东西**——这就是首启离线的根本原因。
+- `dsh-ui-customizer` 主题插件随包内置（`file:` 依赖直接进 node_modules），loader 从 profile 兜底目录解析到它，**不往 profile 里装任何东西**——这就是首启离线的根本原因。
 
 **为什么用 npm 而不是 pnpm**：electron-builder 的 node_modules 收集器对 pnpm 不可靠——25.x 会把 hoisted 布局铺成嵌套/残缺树（缺 `commander`、`cordis-plugin-group` 等），26.x 又会在 `pnpm list --depth Infinity` 上对这么大的 harness 直接 OOM。npm 天生扁平，electron-builder 对 npm 的处理是久经考验的主路径，所以打包侧改用 npm（`package-lock.json`）。
 
@@ -110,5 +124,4 @@ npm run dist           # 生成 Windows NSIS 安装包 dist\DSH Setup 0.1.5.exe
 ## 已知限制
 
 - **未签名**：SmartScreen 会提示，点「仍要运行」。
-- **可选全家桶需要联网**：默认首启离线；只有设 `DSH_WEB_UI=1` 时才会用内置 pnpm 联网装 `@linxin666/dsh-web-ui-all`。
 - 安全边界：`contextIsolation`/`sandbox`/`webSecurity` 全开，仅通过 `preload.js` 暴露最小窗口控制 IPC。

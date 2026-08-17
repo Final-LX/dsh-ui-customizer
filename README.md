@@ -31,12 +31,12 @@ npx @deepseek-ai/dsh web
 
 ### 方式 B：桌面端（打包好的 exe）
 
-下载安装包双击安装即可，**无需安装 Node / pnpm / git，首启也无需联网**（harness、pnpm、主题插件全部随包内置）：
+下载 `DSH-Setup-<版本>.exe` 安装包，双击运行安装向导，按提示点「安装」即可。**无需安装 Node / pnpm / git，首启也无需联网**（整套 DSH 运行时与主题插件全部随包内置）：
 
 - 最新版：<https://github.com/Final-LX/dsh-ui-customizer/releases/latest>
 - 全部版本：<https://github.com/Final-LX/dsh-ui-customizer/releases>
 
-安装包文件名为 `DSH-Setup-<版本>.exe`（未签名，SmartScreen 提示「仍要运行」）。详见 [`desktop/README.md`](desktop/README.md)。
+安装包为未签名程序，首次运行 SmartScreen 会提示，点「仍要运行」即可。装完会在桌面和开始菜单生成「DSH」快捷方式，可直接双击启动。详见 [`desktop/README.md`](desktop/README.md)。
 
 ---
 
@@ -62,7 +62,7 @@ npx @deepseek-ai/dsh web
 
 打开 Web GUI → 右上角 **设置** → 左侧导航 **DIY 主题**，按分组调整。
 
-顶部「启用 DIY 主题」是总开关：关闭后本插件完全不生效（方便让 dsh-web-ui 的皮肤中心接管），打开后恢复。
+顶部「启用 DIY 主题」是总开关：关闭后本插件完全不生效，打开后恢复。
 
 所有改动都是「试穿」：实时预览但不落盘；点右上角「应用」保存，「还原」撤销未保存的更改。
 
@@ -84,27 +84,18 @@ npx @deepseek-ai/dsh web
 | 组件 | 阴影层级 | 无/轻/标准/强 |
 | | 圆角 | 0–24px |
 
-### 与其他插件共存（dsh-web-ui）
-
-本插件可以和 [dsh-web-ui](https://github.com/zhu1090093659/dsh-web-ui) 全家桶并存：**功能用 dsh-web-ui，主题定制用本插件**。
-
-```powershell
-dsh plugin --profile web add @linxin666/dsh-web-ui-all   # 功能全家桶
-dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"   # 本插件
-```
-
-两者都会改主题 token，用「启用 DIY 主题」开关切换：开 = 本插件接管，关 = 用 dsh-web-ui 皮肤中心。
-
 ---
 
 ## 桌面端
 
 `desktop/` 里的 Electron 客户端，把 DSH 界面包成独立窗口。完整说明见 [`desktop/README.md`](desktop/README.md)，要点：
 
+- **向导式安装**：安装包带「欢迎 → 安装 → 完成」向导页，进度清晰，装完可选「运行 DSH」，并自动创建桌面/开始菜单快捷方式。
+- **启动画面**：首次启动时先显示「正在启动」等待画面，DSH 就绪后自动进入主界面，不会黑屏干等。
 - **macOS 风格标题栏**：左上角红绿灯（关闭/最小化/最大化），背景/边框跟随 DIY 主题，无多余文字。
 - **与网页端共享实例**：端口统一为 **3080**（和官方 `dsh web` 一致）。桌面端启动时会探测到已有的 DSH 实例并直接复用——会话实时同步，也不会两个进程并发写会话日志。
 - **托盘常驻**：渐变图标，关窗最小化到托盘；退出时只回收自己启动的 DSH，不误杀复用的网页端实例。
-- **自包含**：harness + pnpm + 主题插件随包内置，首启离线，目标机器无需 Node/pnpm/git。
+- **自包含**：整套 DSH 运行时与主题插件随包内置，首启离线，目标机器无需 Node/pnpm/git。
 - **日志/崩溃恢复**：日志落盘到 `~/.dsh/desktop.log`；DSH 意外退出会弹窗让用户选择重启/退出。
 - **API key 与官方一致**：不自动填、不代管密钥，走 DSH 自带引导或 `DEEPSEEK_API_KEY` 环境变量。
 
@@ -169,6 +160,7 @@ dsh-ui-customizer/
 ├── desktop/              # Electron 桌面客户端（自包含）
 │   ├── main.js           # 主进程：启动/复用 DSH、窗口、托盘、自包含引导
 │   ├── preload.js        # 最小窗口控制 IPC
+│   ├── splash.html       # 启动等待画面（正在启动）
 │   ├── vendor/           # 随包内置的主题插件副本（file: 依赖）
 │   ├── scripts/          # after-pack（rcedit 图标）+ 图标渲染
 │   ├── assets/           # 图标（icon.ico / icon.svg / icon-source.webp）
