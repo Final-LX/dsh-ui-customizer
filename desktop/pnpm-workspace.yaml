@@ -1,2 +1,13 @@
+# pnpm 11 默认屏蔽依赖构建脚本；这里放行需要原生构建的包
 allowBuilds:
   electron: true
+  # @deepseek-ai/dsh 全套 harness 带入的原生依赖
+  cloudflared: true
+  cpu-features: true
+  ssh2: true
+  node-pty: true
+  esbuild: true
+  '@deepseek-ai/dsh-subprocess-local': true
+  '@google/genai': true
+  koffi: true
+  protobufjs: true
