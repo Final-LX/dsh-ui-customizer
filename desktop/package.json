@@ -1,6 +1,6 @@
 {
   "name": "dsh-ui-desktop",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "type": "commonjs",
   "description": "DSH 桌面客户端：本地启动 dsh web 服务并用原生窗口打开（配合 dsh-ui-customizer 主题插件）",
@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@deepseek-ai/dsh": "^0.1.0-rc.6",
+    "dsh-ui-customizer": "file:vendor/dsh-ui-customizer",
+    "node-addon-require-builtin-win32-x64-msvc": "0.1.5",
     "pnpm": "^9.15.0",
     "electron-updater": "^6.3.0"
   },

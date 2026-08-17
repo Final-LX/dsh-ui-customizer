@@ -202,16 +202,12 @@ function runBundledPnpm(args, cwd) {
   return r.status ?? (r.error ? 1 : 0);
 }
 
-// 幂等：profile 三件套缺失则建；插件缺则用内置副本安装；loader 缺则登记
+// 幂等：profile 三件套缺失则建；内置主题插件随应用打包（harness node_modules），
+// 无需往 profile 装任何东西——首启完全离线；loader 缺则登记
 function ensureProfile() {
   initProfileIfMissing();
   const profileDir = path.join(DS_HOME, "profiles", PROFILE);
   const patchPath = path.join(profileDir, "cordis.patch.yml");
-  if (!isPluginInstalled("dsh-ui-customizer")) {
-    log(`引导 profile "${PROFILE}"：安装内置 dsh-ui-customizer ...`);
-    const code = runBundledPnpm(["add", "-w", "file:" + VENDOR_PLUGIN], profileDir);
-    if (code !== 0) throw new Error(`安装 dsh-ui-customizer 失败（exit ${code}）。详情见日志 ${LOG_FILE}`);
-  }
   if (process.env.DSH_WEB_UI === "1" && !isPluginInstalled(WEB_UI_PKG)) {
     log(`引导 profile "${PROFILE}"：安装 ${WEB_UI_PKG} ...`);
     const code2 = runBundledPnpm(["add", "-w", WEB_UI_PKG], profileDir);

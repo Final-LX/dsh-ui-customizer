@@ -1,3 +1,6 @@
+# 用 hoisted 扁平布局：electron-builder 打包 pnpm 项目需要扁平 node_modules
+nodeLinker: hoisted
+
 # pnpm 11 默认屏蔽依赖构建脚本；这里放行需要原生构建的包
 allowBuilds:
   electron: true

@@ -11,9 +11,15 @@ importers:
       '@deepseek-ai/dsh':
         specifier: ^0.1.0-rc.6
         version: 0.1.0-rc.6(c422946f0a5c0641b2538ac43317dd99)
+      dsh-ui-customizer:
+        specifier: file:vendor/dsh-ui-customizer
+        version: file:vendor/dsh-ui-customizer(@deepseek-ai/dsh-client-ui-theme@0.1.0-rc.6(eea6b229d05e17ae0897a173edd1914d))(react@18.3.1)
       electron-updater:
         specifier: ^6.3.0
         version: 6.8.9(supports-color@7.2.0)
+      node-addon-require-builtin-win32-x64-msvc:
+        specifier: 0.1.5
+        version: 0.1.5
       pnpm:
         specifier: ^9.15.0
         version: 9.15.9
@@ -3249,6 +3255,12 @@ packages:
   dotenv@16.6.1:
     resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
     engines: {node: '>=12'}
+
+  dsh-ui-customizer@file:vendor/dsh-ui-customizer:
+    resolution: {directory: vendor/dsh-ui-customizer, type: directory}
+    peerDependencies:
+      '@deepseek-ai/dsh-client-ui-theme': ^0.1.0-rc.6
+      react: ^18.2.0
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -8784,6 +8796,11 @@ snapshots:
 
   dotenv@16.6.1: {}
 
+  dsh-ui-customizer@file:vendor/dsh-ui-customizer(@deepseek-ai/dsh-client-ui-theme@0.1.0-rc.6(eea6b229d05e17ae0897a173edd1914d))(react@18.3.1):
+    dependencies:
+      '@deepseek-ai/dsh-client-ui-theme': 0.1.0-rc.6(eea6b229d05e17ae0897a173edd1914d)
+      react: 18.3.1
+
   dunder-proto@1.0.1:
     dependencies:
       call-bind-apply-helpers: 1.0.2
@@ -9966,7 +9983,6 @@ snapshots:
   node-addon-require-builtin-win32-x64-msvc@0.1.5:
     dependencies:
       node-addon-native-custom-loader: 0.1.5
-    optional: true
 
   node-addon-require-builtin@0.1.5:
     dependencies:
