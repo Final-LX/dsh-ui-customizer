@@ -104,7 +104,7 @@ dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
 - **macOS 风格标题栏**：左上角红绿灯（关闭/最小化/最大化），背景/边框跟随 DIY 主题，无多余文字。
 - **与网页端共享实例**：端口统一为 **3080**（和官方 `dsh web` 一致）。桌面端启动时会探测到已有的 DSH 实例并直接复用——会话实时同步，也不会两个进程并发写会话日志。
 - **托盘常驻**：渐变图标，关窗最小化到托盘；退出时只回收自己启动的 DSH，不误杀复用的网页端实例。
-- **首次引导**：缺插件才 `dsh plugin add`（幂等）+ 登记 loader。
+- **自包含**：harness + pnpm + 主题插件随包内置，首启离线，目标机器无需 Node/pnpm/git。
 - **日志/崩溃恢复**：日志落盘到 `~/.dsh/desktop.log`；DSH 意外退出会弹窗让用户选择重启/退出。
 - **API key 与官方一致**：不自动填、不代管密钥，走 DSH 自带引导或 `DEEPSEEK_API_KEY` 环境变量。
 

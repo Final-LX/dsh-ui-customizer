@@ -5,7 +5,7 @@
 - **macOS 风格红绿灯标题栏**：左上角红/黄/绿三个按钮，背景边框跟随 DIY 主题，无多余文字。
 - **与网页端共享实例**：端口统一 3080，会话实时同步、不并发写会话日志。
 - **托盘常驻**：渐变图标，关窗最小化到托盘，不占用任务栏。
-- **首次引导**：缺插件才 `dsh plugin add`（幂等）+ 登记 loader。
+- **自包含、首启离线**：harness、pnpm、主题插件全部随包内置，全新机器无需 Node/pnpm/git、也无需联网即可启动。
 - **日志落盘 + 崩溃恢复**。
 
 ## 下载安装
@@ -79,20 +79,30 @@ pnpm start
 
 ```powershell
 pnpm pack              # 仅生成未打包目录 dist\win-unpacked（便携版，直接跑 DSH.exe）
-pnpm dist              # 生成 Windows NSIS 安装包 dist\DSH Setup 0.1.4.exe
+pnpm dist              # 生成 Windows NSIS 安装包 dist\DSH Setup 0.1.5.exe
 ```
 
 已内置的打包坑位规避（`package.json` build 字段）：
 
 - `electronDist: node_modules/electron/dist`：复用本地 Electron 二进制，避免从 GitHub 下载 115MB zip（此网络下易损坏）。
-- `win.signAndEditExecutable: false`：跳过 winCodeSign 的 rcedit/签名——非管理员、未开「开发者模式」时 winCodeSign 解包里的 macOS 符号链接会报「无法创建符号链接」。代价是 exe 不内嵌图标/版本号（运行时托盘/任务栏图标仍用 `icon.ico`）。
+- `win.signAndEditExecutable: false`：跳过 winCodeSign 的 rcedit/签名——非管理员、未开「开发者模式」时 winCodeSign 解包里的 macOS 符号链接会报「无法创建符号链接」。exe 图标改由 `afterPack`（`scripts/after-pack.cjs`）用 rcedit 单独写入，不依赖 winCodeSign。
+
+### 自包含打包（关键）
+
+安装包把整套 DSH 运行时都打了进去，目标机器**不需要装 Node / pnpm / git，首启也不需要联网**：
+
+- `@deepseek-ai/dsh`（完整 harness，含 dsh-base + dsh-web-app 等 bundle）随包内置；
+- `pnpm@9` 随包内置（Electron 内嵌 Node 跑 `pnpm.cjs`），仅「可选 `DSH_WEB_UI=1` 全家桶」那条路才会用到；
+- `dsh-ui-customizer` 主题插件随包内置（`file:` 依赖直接进 harness 的 node_modules），loader 直接从安装侧解析，**不再往 profile 里 `pnpm add`**——这就是首启离线的根本原因；
+- `node-addon-require-builtin-win32-x64-msvc` 作为直接依赖提升到顶层：electron-builder 会把 pnpm 铺成嵌套布局，导致这个平台二进制被塞进 `node-addon-require-builtin/` 里、原生内部加载器找不到 → DSH 必装的 HMR 报 `--expose-internals is required`。升到顶层后原生加载器恢复，HMR 与外置插件解析都正常。
+
+> 注意：上面第 4 条目前只加了 Windows 的 `win32-x64-msvc` 变体。以后要出 macOS / Linux 安装包，需照同样方式把对应平台变体（`-darwin-arm64`、`-darwin-x64`、`-linux-x64-gnu` 等）加为直接依赖。
 
 发 GitHub Release 上传 exe 即可；`latest` 永远指向最新版。
 
 ## 已知限制
 
 - **未签名**：SmartScreen 会提示，点「仍要运行」。
-- **首次引导需要 pnpm**：`dsh plugin add` 转发给 pnpm。开发模式没问题；打包版若要在全新机器上装插件，机器上需有 pnpm（或事先初始化好 `~/.dsh/profiles/web`）。
-- **exe 图标是默认 Electron 图标**：因为 `signAndEditExecutable: false`（rcedit 未跑），Explorer 里显示的 exe 图标是默认的；托盘/任务栏图标不受影响。
+- **可选全家桶需要联网**：默认首启离线；只有设 `DSH_WEB_UI=1` 时才会用内置 pnpm 联网装 `@linxin666/dsh-web-ui-all`。
 - **pnpm 11 拦 electron postinstall**：仓库带 `desktop/pnpm-workspace.yaml`（`allowBuilds: electron: true`），若 `pnpm install` 报 `ERR_PNPM_IGNORED_BUILDS`，跑 `pnpm rebuild electron`。
 - 安全边界：`contextIsolation`/`sandbox`/`webSecurity` 全开，仅通过 `preload.js` 暴露最小窗口控制 IPC。
