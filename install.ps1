@@ -1,4 +1,4 @@
-# install.ps1 — 一键安装 dsh-ui-customizer 到 web profile（只用插件的网页用户）
+﻿# install.ps1 — 一键安装 dsh-ui-customizer 到 web profile（只用插件的网页用户）
 #
 # 这是给「只用插件、不用桌面端」的网页用户用的。桌面端（desktop/）自带插件，
 # 不需要跑这个脚本。

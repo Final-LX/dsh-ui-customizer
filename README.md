@@ -87,12 +87,18 @@ npx @deepseek-ai/dsh web
 
 打开右上角「设置 → DIY 主题」即可开始定制。
 
-### 只有 Node.js、没有 git/pnpm？手动复制
+### 只有 Node.js、没有 git/pnpm？用脚本装
 
 1. 在本仓库 GitHub 页面点「Code → Download ZIP」，下载并解压；
-2. 把解压出的 `package.json` 和 `lib` 文件夹复制到 `~\.dsh\profiles\web\node_modules\dsh-ui-customizer\`（`node_modules` 不存在就先建）；
-3. 按上面登记 loader 行；
-4. `npx @deepseek-ai/dsh web`。
+2. 在解压出的目录里运行：
+
+```powershell
+.\install-web.ps1
+```
+
+3. 启动网页版：`npx @deepseek-ai/dsh web`，然后打开「设置 → DIY 主题」。
+
+脚本会做两件事：把插件复制进 web profile，并自动登记 loader（幂等，可重复运行）。全程**不需要 git 和 pnpm**。
 
 ---
 
@@ -151,7 +157,8 @@ npm run wallpaper -- "C:\path\to\image.png"
 ```
 dsh-ui-customizer/
 ├── package.json          # exports["./client"] + dsh.client + peerDeps + scripts
-├── install.ps1           # 一键安装（开发用）
+├── install.ps1           # 一键安装（用 pnpm，开发用）
+├── install-web.ps1       # 一键安装（网页端，无需 git/pnpm）
 ├── docs/                 # 截图
 ├── assets/wallpaper.txt  # 壁纸 data URI
 ├── .github/workflows/ci.yml  # CI 矩阵 + token 比对
