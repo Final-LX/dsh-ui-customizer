@@ -1,5 +1,10 @@
-# install.ps1 — 一键安装 dsh-ui-customizer 到 web profile
+# install.ps1 — 一键安装 dsh-ui-customizer 到 web profile（网页端「方式 A」）
+#
+# 这是给「只用插件、不用桌面端」的网页用户用的。桌面端（desktop/）自带插件，
+# 不需要跑这个脚本。
+#
 # 用法：在插件目录里运行  .\install.ps1
+# 前置：机器上要有 dsh 或 npx（Node）
 $ErrorActionPreference = "Stop"
 
 $pluginDir = Split-Path -Parent $MyInvocation.MyCommand.Path

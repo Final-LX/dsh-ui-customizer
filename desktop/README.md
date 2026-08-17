@@ -70,7 +70,7 @@ pnpm start
 
 ## 数据都在哪
 
-- **服务端** `~/.dsh/`：profile、插件、会话、日志 `desktop.log`。
+- **服务端** `~/.dsh/`：profile（含 `cordis.patch.yml` 里的 loader 登记）、会话、日志 `desktop.log`。主题插件本身随包内置在安装目录，不在 `~/.dsh`。
 - **浏览器端**（Electron `userData`，Windows 在 `%APPDATA%/dsh-ui-desktop/`）：localStorage（DIY 配置、方案）+ IndexedDB（上传的图片/视频）。
 
 > 注意：浏览器端数据按 origin 隔离，且网页浏览器和 Electron 是**不同的浏览器 profile**——所以 DIY 主题配置在网页端和桌面端是各自独立保存的（会话是同步的，主题配置不共享）。
@@ -98,7 +98,11 @@ pnpm dist              # 生成 Windows NSIS 安装包 dist\DSH Setup 0.1.5.exe
 
 > 注意：上面第 4 条目前只加了 Windows 的 `win32-x64-msvc` 变体。以后要出 macOS / Linux 安装包，需照同样方式把对应平台变体（`-darwin-arm64`、`-darwin-x64`、`-linux-x64-gnu` 等）加为直接依赖。
 
-发 GitHub Release 上传 exe 即可；`latest` 永远指向最新版。
+### 发 Release
+
+1. `pnpm dist` 生成 `dist\DSH Setup 0.1.5.exe`（产物文件名带空格）。
+2. 把 exe 和 blockmap 重命名为连字符版（`DSH-Setup-0.1.5.exe`、`DSH-Setup-0.1.5.exe.blockmap`），与 `latest.yml` 里的 `url` 对齐——否则 electron-updater 自动更新会 404。
+3. 在 GitHub 上基于 `v0.1.5` 标签新建 Release，上传三个文件：`DSH-Setup-0.1.5.exe`、`DSH-Setup-0.1.5.exe.blockmap`、`latest.yml`。`latest` 永远指向最新版。
 
 ## 已知限制
 

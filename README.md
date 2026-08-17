@@ -2,8 +2,8 @@
 
 面向 [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) 的主题定制插件 + Electron 桌面客户端。
 
-- **插件（dsh-ui-customizer）**：不改任何源码，装进 web profile 后，在「设置 → DIY 主题」里实时调整配色、字体、背景、圆角、阴影等，配置持久化在浏览器。
-- **桌面端（desktop/）**：把 `dsh web` 包成独立原生窗口——macOS 风格红绿灯标题栏、跟随主题、托盘常驻，并且与网页端**共享同一个 DSH 实例**，会话实时同步。
+- **插件（dsh-ui-customizer，v1.0.0）**：不改任何源码，装进 web profile 后，在「设置 → DIY 主题」里实时调整配色、字体、背景、圆角、阴影等，配置持久化在浏览器。
+- **桌面端（desktop/，v0.1.5）**：把 `dsh web` 包成独立原生窗口——macOS 风格红绿灯标题栏、跟随主题、托盘常驻，并且与网页端**共享同一个 DSH 实例**，会话实时同步。**完全自包含**：全新机器无需 Node / pnpm / git，首启也无需联网。
 
 ---
 
@@ -31,12 +31,12 @@ npx @deepseek-ai/dsh web
 
 ### 方式 B：桌面端（打包好的 exe）
 
-下载安装包双击安装即可，无需手敲命令：
+下载安装包双击安装即可，**无需安装 Node / pnpm / git，首启也无需联网**（harness、pnpm、主题插件全部随包内置）：
 
 - 最新版：<https://github.com/Final-LX/dsh-ui-customizer/releases/latest>
 - 全部版本：<https://github.com/Final-LX/dsh-ui-customizer/releases>
 
-详见 [`desktop/README.md`](desktop/README.md)。
+安装包文件名为 `DSH-Setup-<版本>.exe`（未签名，SmartScreen 提示「仍要运行」）。详见 [`desktop/README.md`](desktop/README.md)。
 
 ---
 
@@ -166,7 +166,13 @@ dsh-ui-customizer/
 ├── docs/                 # 截图
 ├── assets/wallpaper.txt  # 壁纸 data URI
 ├── .github/workflows/ci.yml  # CI 矩阵 + token 比对
-├── desktop/              # Electron 桌面客户端（含安装包）
+├── desktop/              # Electron 桌面客户端（自包含）
+│   ├── main.js           # 主进程：启动/复用 DSH、窗口、托盘、自包含引导
+│   ├── preload.js        # 最小窗口控制 IPC
+│   ├── vendor/           # 随包内置的主题插件副本（file: 依赖）
+│   ├── scripts/          # after-pack（rcedit 图标）+ 图标渲染
+│   ├── assets/           # 图标（icon.ico / icon.svg / icon-source.webp）
+│   └── README.md         # 桌面端完整文档
 ├── tools/
 │   ├── set-wallpaper.cjs    # 换壁纸
 │   ├── inject-wallpaper.cjs # 仅重新内嵌壁纸
