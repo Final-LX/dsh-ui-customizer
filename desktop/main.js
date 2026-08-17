@@ -202,8 +202,38 @@ function runBundledPnpm(args, cwd) {
   return r.status ?? (r.error ? 1 : 0);
 }
 
-// 幂等：profile 三件套缺失则建；内置主题插件随应用打包（harness node_modules），
-// 无需往 profile 装任何东西——首启完全离线；loader 缺则登记
+// 把随包内置的主题插件链到 $DSH_HOME/profiles/node_modules 兜底目录。
+// npm 扁平布局下 DSH 的原生 internal 加载器正常工作，loader 会从 profile 的
+// baseUrl 解析插件（走 internal.import(name, baseUrl)），所以插件必须落在
+// profile 的解析链上——光在 harness 的 node_modules 里不够（profile 目录看不到）。
+function linkBundledPluginIntoFallback() {
+  const target = path.join(__dirname, "node_modules", "dsh-ui-customizer");
+  if (!fs.existsSync(path.join(target, "package.json"))) {
+    log("内置主题插件缺失，跳过链接：" + target);
+    return;
+  }
+  const fallbackDir = path.join(DS_HOME, "profiles", "node_modules");
+  fs.mkdirSync(fallbackDir, { recursive: true });
+  const linkPath = path.join(fallbackDir, "dsh-ui-customizer");
+  try {
+    if (fs.realpathSync(linkPath) === fs.realpathSync(target)) return; // 已正确链好
+  } catch (e) {}
+  try { fs.rmSync(linkPath, { recursive: true, force: true }); } catch (e) {}
+  try {
+    fs.symlinkSync(target, linkPath, "junction");
+    log(`已链入内置插件：${linkPath} -> ${target}`);
+  } catch (e) {
+    log(`链接内置插件失败（junction），改直接复制：${e.message}`);
+    try {
+      fs.cpSync(target, linkPath, { recursive: true });
+      log(`已复制内置插件到：${linkPath}`);
+    } catch (e2) {
+      log(`复制内置插件也失败：${e2.message}`);
+    }
+  }
+}
+
+// 幂等：profile 三件套缺失则建；内置主题插件链入 profile 兜底目录；loader 缺则登记
 function ensureProfile() {
   initProfileIfMissing();
   const profileDir = path.join(DS_HOME, "profiles", PROFILE);
@@ -214,6 +244,7 @@ function ensureProfile() {
     if (code2 !== 0) throw new Error(`安装 ${WEB_UI_PKG} 失败（exit ${code2}）。详情见日志 ${LOG_FILE}`);
   }
   registerLoader(patchPath);
+  linkBundledPluginIntoFallback();
 }
 
 // ---------- 服务启动 ----------
