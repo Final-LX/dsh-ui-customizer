@@ -3,11 +3,13 @@
 const { app, BrowserWindow, nativeImage } = require("electron");
 const fs = require("fs");
 const path = require("path");
-const zlib = require("zlib");
 
 const SVG_PATH = path.join(__dirname, "..", "assets", "icon.svg");
 const OUT = path.join(__dirname, "..", "assets", "icon.ico");
 const FILL = "#4D6BFE"; // DeepSeek 品牌蓝
+
+// 强制 1:1 缩放，避免 Windows DPI 让离屏捕获分辨率翻倍
+app.commandLine.appendSwitch("force-device-scale-factor", "1");
 
 let svg = fs.readFileSync(SVG_PATH, "utf8");
 svg = svg
@@ -66,7 +68,7 @@ app.whenReady().then(async () => {
   const sizes = [16, 24, 32, 48, 256];
   const pngs = sizes.map((s) => ({
     size: s,
-    buffer: s === 256 ? master.toPNG() : master.resize({ width: s, height: s }).toPNG()
+    buffer: master.resize({ width: s, height: s }).toPNG()
   }));
   const ico = makeIco(pngs);
   fs.writeFileSync(OUT, ico);

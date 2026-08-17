@@ -16,26 +16,34 @@
   },
   "devDependencies": {
     "electron": "^33.0.0",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "rcedit": "^5.0.2"
   },
   "build": {
     "appId": "com.finallx.dsh-ui-desktop",
     "productName": "DSH",
     "electronDist": "node_modules/electron/dist",
+    "afterPack": "scripts/after-pack.cjs",
     "publish": {
       "provider": "github",
       "owner": "Final-LX",
       "repo": "dsh-ui-customizer"
     },
     "win": {
-      "target": ["nsis"],
+      "target": [
+        "nsis"
+      ],
       "signAndEditExecutable": false
     },
     "mac": {
-      "target": ["dmg"]
+      "target": [
+        "dmg"
+      ]
     },
     "linux": {
-      "target": ["AppImage"]
+      "target": [
+        "AppImage"
+      ]
     }
   }
 }
