@@ -65,6 +65,8 @@
 
 ## 只用插件（网页端，进阶）
 
+> 前提：已装 [Node.js](https://nodejs.org)（含 npx）、[git](https://git-scm.com)、[pnpm](https://pnpm.io)。**不想装这些就用上面的桌面客户端，它自带一切。**
+
 如果你已经会用命令行，且只想在网页版用主题插件、不装桌面客户端：
 
 ```powershell
@@ -84,6 +86,13 @@ npx @deepseek-ai/dsh web
 ```
 
 打开右上角「设置 → DIY 主题」即可开始定制。
+
+### 只有 Node.js、没有 git/pnpm？手动复制
+
+1. 在本仓库 GitHub 页面点「Code → Download ZIP」，下载并解压；
+2. 把解压出的 `package.json` 和 `lib` 文件夹复制到 `~\.dsh\profiles\web\node_modules\dsh-ui-customizer\`（`node_modules` 不存在就先建）；
+3. 按上面登记 loader 行；
+4. `npx @deepseek-ai/dsh web`。
 
 ---
 
