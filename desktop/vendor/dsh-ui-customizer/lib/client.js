@@ -29,6 +29,7 @@ window.__ModuleLoader__.load({
       fontScale: 100,     // 字号缩放 %（80-130）
       shadowLevel: "standard",  // none | light | standard | strong
       neutralTone: "blue",  // 中性色调
+      useBackground: true,  // 总背景开关：false = 完全不用背景（透明/纯色）
       useWallpaper: WALLPAPER_DATA_URI !== "",
       backgroundUrl: "",
       backgroundType: "image",  // image | video
@@ -61,6 +62,7 @@ window.__ModuleLoader__.load({
         fontScale: DEFAULTS.fontScale,
         shadowLevel: DEFAULTS.shadowLevel,
         neutralTone: DEFAULTS.neutralTone,
+        useBackground: DEFAULTS.useBackground,
         useWallpaper: DEFAULTS.useWallpaper,
         backgroundUrl: DEFAULTS.backgroundUrl,
         backgroundType: DEFAULTS.backgroundType,
@@ -86,6 +88,7 @@ window.__ModuleLoader__.load({
       if (typeof saved.fontScale === "number") d.fontScale = saved.fontScale;
       if (typeof saved.shadowLevel === "string") d.shadowLevel = saved.shadowLevel;
       if (typeof saved.neutralTone === "string") d.neutralTone = saved.neutralTone;
+      if (typeof saved.useBackground === "boolean") d.useBackground = saved.useBackground;
       if (typeof saved.useWallpaper === "boolean") d.useWallpaper = saved.useWallpaper;
       if (typeof saved.backgroundUrl === "string") d.backgroundUrl = saved.backgroundUrl;
       if (typeof saved.backgroundType === "string") d.backgroundType = saved.backgroundType;
@@ -224,6 +227,64 @@ window.__ModuleLoader__.load({
       if (u !== undefined) { revokeUrl(u); delete mediaCache[id]; }
       idbDelete(id).catch(function () {});
     }
+    // 确保配置引用的媒体已从 IndexedDB 载入缓存（应用方案/切换背景时用）
+    function ensureConfigMedia(cfg) {
+      if (!cfg) return;
+      [cfg.backgroundUrl, cfg.videoUrl].forEach(function (ref) {
+        if (!isMediaRef(ref)) return;
+        var mid = ref.slice(MEDIA_PREFIX.length);
+        if (mediaCache[mid]) return;
+        idbGet(mid).then(function (blob) {
+          if (blob) setMediaCache(mid, URL.createObjectURL(blob));
+        }).catch(function () {});
+      });
+    }
+    // 收集配置 + 所有命名方案里仍在引用的媒体 id
+    function collectReferencedMediaIds() {
+      var ids = {};
+      function addRef(ref) { if (isMediaRef(ref)) ids[ref.slice(MEDIA_PREFIX.length)] = true; }
+      try {
+        var cfg = loadConfig();
+        addRef(cfg.backgroundUrl);
+        addRef(cfg.videoUrl);
+      } catch (e) {}
+      try {
+        (loadSchemes() || []).forEach(function (s) {
+          var c = s && s.config;
+          if (c && typeof c === "object") {
+            addRef(c.backgroundUrl);
+            addRef(c.videoUrl);
+          }
+        });
+      } catch (e) {}
+      return ids;
+    }
+    // 启动时清理孤儿 Blob：配置和方案都没引用的历史上传直接删掉
+    function cleanOrphanMedia() {
+      return idbOpen().then(function (db) {
+        return new Promise(function (resolve, reject) {
+          var tx = db.transaction(IDB_STORE, "readonly");
+          var req = tx.objectStore(IDB_STORE).getAllKeys();
+          req.onsuccess = function () {
+            var keys = req.result || [];
+            var refs = collectReferencedMediaIds();
+            var orphans = keys.filter(function (k) { return !refs[k]; });
+            resolve(orphans);
+          };
+          req.onerror = function () { reject(req.error); };
+        });
+      }).then(function (orphans) {
+        if (!orphans || !orphans.length) return;
+        return idbOpen().then(function (db) {
+          return new Promise(function (resolve, reject) {
+            var tx = db.transaction(IDB_STORE, "readwrite");
+            orphans.forEach(function (id) { tx.objectStore(IDB_STORE).delete(id); });
+            tx.oncomplete = resolve;
+            tx.onerror = function () { reject(tx.error); };
+          });
+        });
+      }).catch(function () {});
+    }
     // 把遗留 base64 图片迁到 IndexedDB，并解析配置里的 idb: 引用
     function resolveMedia(cfg) {
       var migrated = false;
@@ -253,6 +314,7 @@ window.__ModuleLoader__.load({
     }
 
     function effectiveBackground(cfg) {
+      if (cfg.useBackground === false) return "";
       if (cfg.useWallpaper && WALLPAPER_DATA_URI !== "") return WALLPAPER_DATA_URI;
       if (cfg.backgroundUrl) return resolvedMediaUrl(cfg.backgroundUrl);
       return "";
@@ -666,7 +728,7 @@ window.__ModuleLoader__.load({
       function applyVideo(cfg) {
         var v = ensureVideoEl();
         if (!v) return;
-        var raw = (cfg && cfg.backgroundType === "video") ? (cfg.videoUrl || "") : "";
+        var raw = (cfg && cfg.useBackground !== false && cfg.backgroundType === "video") ? (cfg.videoUrl || "") : "";
         var url = resolvedMediaUrl(raw);
         if (url) {
           v.src = url;
@@ -698,6 +760,8 @@ window.__ModuleLoader__.load({
         if (r.migrated) saveConfig(r.cfg);
         applyConfig(r.cfg);
       }).catch(function () {});
+      // 启动时清理孤儿 Blob（历史上传但已不被引用）
+      cleanOrphanMedia();
 
       ctx.effect(function () {
         return function () { if (tokensDisposer) tokensDisposer(); };
@@ -720,14 +784,54 @@ window.__ModuleLoader__.load({
         var schemeSt = React.useState(loadSchemes);
         var schemes = schemeSt[0];
         var setSchemes = schemeSt[1];
+        var thumbsSt = React.useState(0);
+        var thumbsTick = thumbsSt[0];
+        var setThumbsTick = thumbsSt[1];
         var nameSt = React.useState("");
         var schemeName = nameSt[0];
         var setName = nameSt[1];
 
         React.useEffect(function () {
-          var t = setTimeout(function () { applyConfig(draft); }, 80);
+          var t = setTimeout(function () {
+            ensureConfigMedia(draft);
+            applyConfig(draft);
+            // 应用方案/切换背景时，媒体若尚未载入缓存，加载完再应用一次
+            var jobs = [];
+            [draft.backgroundUrl, draft.videoUrl].forEach(function (ref) {
+              if (isMediaRef(ref)) {
+                var mid = ref.slice(MEDIA_PREFIX.length);
+                if (!mediaCache[mid]) jobs.push(idbGet(mid).then(function (blob) {
+                  if (blob) { setMediaCache(mid, URL.createObjectURL(blob)); return true; }
+                  return false;
+                }).catch(function () { return false; }));
+              }
+            });
+            if (jobs.length) {
+              Promise.all(jobs).then(function (results) {
+                if (results.some(Boolean)) applyConfig(draft);
+              });
+            }
+          }, 80);
           return function () { clearTimeout(t); };
         }, [draft]);
+
+        // 方案缩略图：把方案引用的媒体从 IndexedDB 载入缓存（idb: 引用）
+        React.useEffect(function () {
+          var jobs = [];
+          (loadSchemes() || []).forEach(function (s) {
+            var c = s && s.config;
+            if (!c || typeof c !== "object") return;
+            [c.backgroundUrl, c.videoUrl].forEach(function (ref) {
+              if (!isMediaRef(ref)) return;
+              var mid = ref.slice(MEDIA_PREFIX.length);
+              if (mediaCache[mid]) return;
+              jobs.push(idbGet(mid).then(function (blob) {
+                if (blob) { setMediaCache(mid, URL.createObjectURL(blob)); setThumbsTick(function (n) { return n + 1; }); }
+              }).catch(function () {}));
+            });
+          });
+          return function () {};
+        }, [schemes, thumbsTick]);
 
         function updateDraft(patch) { setSt({ draft: Object.assign({}, draft, patch), applied: applied }); }
         function setPalette(key, value) {
@@ -752,7 +856,11 @@ window.__ModuleLoader__.load({
         }
         function commit() { setSt({ draft: draft, applied: draft }); saveConfig(draft); }
         function revert() { setSt({ draft: applied, applied: applied }); }
-        function resetDefaults() { setSt({ draft: freshDefaults(), applied: applied }); }
+        function resetDefaults() {
+          releaseMediaRef(draft.backgroundUrl);
+          releaseMediaRef(draft.videoUrl);
+          setSt({ draft: freshDefaults(), applied: applied });
+        }
         function handleUpload(e) {
           var file = e.target.files && e.target.files[0];
           if (!file) return;
@@ -807,6 +915,19 @@ window.__ModuleLoader__.load({
           saveSchemes(list);
           setSchemes(list);
         }
+        function clearUploadedMedia() {
+          releaseMediaRef(draft.backgroundUrl);
+          releaseMediaRef(draft.videoUrl);
+          updateDraft({ backgroundUrl: "", videoUrl: "", useWallpaper: false, useBackground: true });
+        }
+        // 方案缩略图元信息：url 为空则显示 label 占位
+        function schemeThumbMeta(cfg) {
+          if (!cfg || cfg.useBackground === false) return { url: "", label: "无背景" };
+          if (cfg.useWallpaper && WALLPAPER_DATA_URI !== "") return { url: WALLPAPER_DATA_URI, label: "" };
+          if (cfg.backgroundType === "image" && cfg.backgroundUrl) return { url: resolvedMediaUrl(cfg.backgroundUrl), label: "" };
+          if (cfg.backgroundType === "video" && cfg.videoUrl) return { url: "", label: "视频背景" };
+          return { url: "", label: "无背景" };
+        }
 
         var P = draft.palette;
         return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: "10px", padding: "16px 0" } },
@@ -848,26 +969,36 @@ window.__ModuleLoader__.load({
               row("字号缩放 " + draft.fontScale + "%", rangeInput(draft.fontScale, 80, 130, 1, function (v) { updateDraft({ fontScale: v }); }))
             ]),
             group("背景", true, [
-              row("背景类型", selectControl(draft.backgroundType, [{ value: "image", label: "图片" }, { value: "video", label: "视频" }], function (v) { updateDraft({ backgroundType: v }); })),
-              draft.backgroundType === "image" ? WALLPAPER_DATA_URI !== "" ? row("使用内置壁纸", checkInput(draft.useWallpaper, function (v) { updateDraft({ useWallpaper: v }); })) : null : null,
-              draft.backgroundType === "image" ? uploadControl("image/*", handleUpload, "上传背景图", "PNG 或 JPG，自动压缩到 1920px") : null,
-              draft.backgroundType === "image" ? row("背景 URL", textInput(draft.backgroundUrl, "https://… 或 data:image/…", function (v) { updateDraft({ backgroundUrl: v }); })) : null,
-              draft.backgroundType === "video" ? uploadControl("video/*", handleVideoUpload, "上传视频", "MP4，本地预览") : null,
-              draft.backgroundType === "video" ? row("视频 URL", textInput(draft.videoUrl, "https://…mp4", function (v) { updateDraft({ videoUrl: v }); })) : null,
-              row("面板通透度 " + Math.round(draft.glassAlpha * 100) + "%", rangeInput(Math.round(draft.glassAlpha * 100), 0, 100, 1, function (v) { updateDraft({ glassAlpha: v / 100 }); })),
-              draft.backgroundType === "image" ? row("毛玻璃强度 " + draft.blur + "px", rangeInput(draft.blur, 0, 30, 1, function (v) { updateDraft({ blur: v }); })) : null
+              row("使用背景", switchControl(draft.useBackground !== false, function (v) { updateDraft({ useBackground: v }); })),
+              draft.useBackground === false ? React.createElement("div", { style: { fontSize: "12px", color: "var(--dsw-alias-label-tertiary)", lineHeight: "18px" } }, "已关闭背景，界面使用主题默认底色。") : null,
+              draft.useBackground !== false ? row("背景类型", selectControl(draft.backgroundType, [{ value: "image", label: "图片" }, { value: "video", label: "视频" }], function (v) { updateDraft({ backgroundType: v }); })) : null,
+              draft.useBackground !== false && draft.backgroundType === "image" ? WALLPAPER_DATA_URI !== "" ? row("使用内置壁纸", checkInput(draft.useWallpaper, function (v) { updateDraft({ useWallpaper: v }); })) : null : null,
+              draft.useBackground !== false && draft.backgroundType === "image" ? uploadControl("image/*", handleUpload, "上传背景图", "PNG 或 JPG，自动压缩到 1920px") : null,
+              draft.useBackground !== false && draft.backgroundType === "image" ? row("背景 URL", textInput(draft.backgroundUrl, "https://… 或 data:image/…", function (v) { updateDraft({ backgroundUrl: v }); })) : null,
+              draft.useBackground !== false && draft.backgroundType === "video" ? uploadControl("video/*", handleVideoUpload, "上传视频", "MP4，本地预览") : null,
+              draft.useBackground !== false && draft.backgroundType === "video" ? row("视频 URL", textInput(draft.videoUrl, "https://…mp4", function (v) { updateDraft({ videoUrl: v }); })) : null,
+              draft.useBackground !== false ? row("面板通透度 " + Math.round(draft.glassAlpha * 100) + "%", rangeInput(Math.round(draft.glassAlpha * 100), 0, 100, 1, function (v) { updateDraft({ glassAlpha: v / 100 }); })) : null,
+              draft.useBackground !== false && draft.backgroundType === "image" ? row("毛玻璃强度 " + draft.blur + "px", rangeInput(draft.blur, 0, 30, 1, function (v) { updateDraft({ blur: v }); })) : null,
+              (isMediaRef(draft.backgroundUrl) || isMediaRef(draft.videoUrl)) ? React.createElement("button", { type: "button", onClick: clearUploadedMedia, style: ghostBtnStyle(false) }, "清除已上传媒体") : null
             ]),
             group("我的方案", false, [
               row("方案名称", textInput(schemeName, "如「深夜蓝」", function (v) { setName(v); })),
               React.createElement("button", { type: "button", onClick: saveScheme, style: applyBtnStyle(false) }, "保存当前方案"),
-              schemes.length > 0 ? React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: "6px" } },
+              schemes.length > 0 ? React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" } },
                 schemes.map(function (sc) {
-                  return React.createElement("div", { key: sc.name, style: { display: "flex", alignItems: "center", gap: "8px", padding: "6px 10px", borderRadius: "8px", border: "1px solid var(--dsw-alias-border-l2)", background: "var(--dsw-alias-bg-layer-2)" } },
-                    React.createElement("button", { type: "button", "data-scheme": sc.name, onClick: function () { applyScheme(sc.config); }, style: { flex: "1 1 auto", textAlign: "left", background: "transparent", border: "none", cursor: "pointer", fontSize: "13px", color: "var(--dsw-alias-label-primary)", fontFamily: "inherit", padding: 0 } }, sc.name),
-                    React.createElement("button", { type: "button", "data-del-scheme": sc.name, onClick: function () { deleteScheme(sc.name); }, style: { background: "transparent", border: "none", cursor: "pointer", color: "var(--dsw-alias-label-tertiary)", fontSize: "12px", fontFamily: "inherit" } }, "删除")
+                  var meta = schemeThumbMeta(sc.config);
+                  return React.createElement("div", { key: sc.name, "data-scheme": sc.name, onClick: function () { applyScheme(sc.config); }, style: { cursor: "pointer", borderRadius: "10px", border: "1px solid var(--dsw-alias-border-l2)", overflow: "hidden", background: "var(--dsw-alias-bg-layer-2)", transition: "border-color .15s ease" } },
+                    React.createElement("div", { style: { height: "54px", background: meta.url ? "url(" + meta.url + ") center/cover no-repeat" : "linear-gradient(135deg, var(--dsw-alias-bg-layer-3), var(--dsw-alias-bg-layer-1))", position: "relative" } },
+                      meta.url ? null : React.createElement("span", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: "var(--dsw-alias-label-tertiary)" } }, meta.label)
+                    ),
+                    React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px", padding: "7px 9px" } },
+                      React.createElement("span", { style: { fontSize: "12px", fontWeight: "600", color: "var(--dsw-alias-label-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 } }, sc.name),
+                      React.createElement("button", { type: "button", "data-del-scheme": sc.name, onClick: function (e) { e.stopPropagation(); deleteScheme(sc.name); }, style: { background: "transparent", border: "none", cursor: "pointer", color: "var(--dsw-alias-label-tertiary)", fontSize: "11px", fontFamily: "inherit", flexShrink: 0 } }, "删除")
+                    )
                   );
                 })
-              ) : null
+              ) : null,
+              schemes.length > 0 ? React.createElement("div", { style: { fontSize: "12px", color: "var(--dsw-alias-label-tertiary)", lineHeight: "18px" } }, "点击卡片应用方案；删除方案会在下次启动自动清理其不再引用的图片 / 视频。") : null
             ]),
             group("组件", false, [
               row("阴影", selectControl(draft.shadowLevel, [{ value: "none", label: "无" }, { value: "light", label: "轻" }, { value: "standard", label: "标准" }, { value: "strong", label: "强" }], function (v) { updateDraft({ shadowLevel: v }); })),

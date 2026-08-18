@@ -50,7 +50,7 @@ const mockLocalStorage = {
 function makeReactMock() {
   let hooks = [];
   let hookIndex = 0;
-  let lastCleanup = null;
+  let cleanups = [];
   return {
     _beginRender: () => { hookIndex = 0; },
     createElement: (type, props, ...children) => ({ type, props: props || {}, children }),
@@ -60,8 +60,9 @@ function makeReactMock() {
       return [hooks[idx], (next) => { hooks[idx] = typeof next === "function" ? next(hooks[idx]) : next; }];
     },
     useEffect: (cb) => {
-      if (lastCleanup) { const c = lastCleanup; lastCleanup = null; c(); }
-      lastCleanup = cb();
+      const idx = hookIndex++;
+      if (cleanups[idx]) { const c = cleanups[idx]; delete cleanups[idx]; c(); }
+      cleanups[idx] = cb();
     },
   };
 }
@@ -168,7 +169,7 @@ assert(byType("color").length === 5, "颜色输入数量: " + byType("color").le
 assert(byType("range").length === 5, "滑杆数量: " + byType("range").length);
 assert(byType("checkbox").length === 1, "复选框数量: " + byType("checkbox").length);
 assert(byType("select").length === 5, "下拉框数量: " + byType("select").length);
-assert(byType("switch").length === 1, "开关数量: " + byType("switch").length);
+assert(byType("switch").length === 2, "开关数量: " + byType("switch").length);
 assert(byType("file").length === 1, "文件输入数量: " + byType("file").length);
 assert(btn("应用") && btn("还原") && btn("重置为默认") && btn("保存当前方案"), "缺操作按钮");
 assert(!localStorageStore["dsh-ui-customizer:config:v3"], "初始不应自动持久化");
