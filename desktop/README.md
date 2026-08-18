@@ -99,7 +99,7 @@ npm start
 
 #### 窗口标题栏
 
-桌面端使用 Electron/Windows 系统原生标题栏（`frame: true`），不向 Web 页面注入标题栏 DOM 或 CSS，也不修改 `body`、`#root`、滚动模型或 sidebar CSS 变量。
+桌面端使用 Electron/Windows 系统原生标题栏（`frame: true`），窗口标题为 `DeepSeek Harness`，并关闭 Electron 默认应用菜单（File、Edit、View、Window、Help）。桌面端不向 Web 页面注入标题栏 DOM 或 CSS，也不修改 `body`、`#root`、滚动模型或 sidebar CSS 变量。
 
 - 窗口控制、拖动区域、最大化和系统菜单由 Windows 原生窗口处理；
 - 使用 `assets/icon.ico` 作为窗口和任务栏图标，页面内 DSH logo 保持原样；

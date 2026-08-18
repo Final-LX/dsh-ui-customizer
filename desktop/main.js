@@ -5,6 +5,9 @@
 //   → 固定端口起 `dsh web` → 解析就绪地址 → 开窗口
 //   → 日志落盘 + 崩溃恢复 + 托盘。
 const { app, BrowserWindow, Tray, Menu, nativeImage, dialog, shell, ipcMain } = require("electron");
+
+// 桌面壳不提供额外的 File/Edit/View/Window/Help 菜单，让 Web 页面保持完整可用。
+Menu.setApplicationMenu(null);
 const { spawn, spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
@@ -400,7 +403,7 @@ function createWindow() {
     minWidth: 960,
     minHeight: 640,
     backgroundColor: "#111318",
-    title: "DSH",
+    title: "DeepSeek Harness",
     icon: ICON_PATH,                    // 任务栏/Alt-Tab 窗口图标
     frame: true,                        // 系统原生标题栏：不覆盖 Web 页面和插件布局
     webPreferences: {
