@@ -171,7 +171,7 @@ assert(byType("checkbox").length === 1, "复选框数量: " + byType("checkbox")
 assert(byType("select").length === 5, "下拉框数量: " + byType("select").length);
 assert(byType("switch").length === 2, "开关数量: " + byType("switch").length);
 assert(byType("file").length === 1, "文件输入数量: " + byType("file").length);
-assert(btn("应用") && btn("还原") && btn("重置为默认") && btn("保存当前方案"), "缺操作按钮");
+assert(btn("应用") && btn("还原") && btn("重置为默认") && btn("保存方案"), "缺操作按钮");
 assert(!localStorageStore["dsh-ui-customizer:config:v3"], "初始不应自动持久化");
 
 // ---- 滑块：带 data 属性 + 填充进度 ----
@@ -289,7 +289,7 @@ assert(style.textContent.includes("html,body{background:transparent;}"), "视频
 // ---- 保存方案 ----
 byType("text")[1].onChange({ target: { value: "我的深夜蓝" } });
 renderAndCollect();
-btn("保存当前方案").props.onClick();
+btn("保存方案").props.onClick();
 renderAndCollect();
 const schemes = JSON.parse(localStorageStore["dsh-ui-customizer:schemes"]);
 assert(schemes.length === 1 && schemes[0].name === "我的深夜蓝", "方案未保存");

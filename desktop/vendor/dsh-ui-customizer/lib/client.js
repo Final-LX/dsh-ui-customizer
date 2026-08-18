@@ -259,6 +259,37 @@ window.__ModuleLoader__.load({
       } catch (e) {}
       return ids;
     }
+    // 视频首帧捕获：异步取一帧转 JPEG data URI 用作方案缩略图；失败回调 null
+    function captureVideoFrame(url, cb) {
+      var v = document.createElement("video");
+      v.muted = true;
+      v.playsInline = true;
+      v.preload = "auto";
+      v.src = url;
+      var settled = false;
+      function settle(dataUrl) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        try { v.removeAttribute("src"); v.load(); } catch (e) {}
+        cb(dataUrl);
+      }
+      var timer = setTimeout(function () { settle(null); }, 4000);
+      v.onloadeddata = function () {
+        try { v.currentTime = Math.min(0.2, (v.duration || 0.2) / 2); } catch (e) {}
+        v.onseeked = function () {
+          try {
+            var c = document.createElement("canvas");
+            c.width = Math.min(v.videoWidth || 320, 640);
+            c.height = Math.round(c.width * ((v.videoHeight || 180) / (v.videoWidth || 320)));
+            c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+            settle(c.toDataURL("image/jpeg", 0.7));
+          } catch (e) { settle(null); }
+        };
+      };
+      v.onerror = function () { settle(null); };
+      v.onabort = function () { settle(null); };
+    }
     // 启动时清理孤儿 Blob：配置和方案都没引用的历史上传直接删掉
     function cleanOrphanMedia() {
       return idbOpen().then(function (db) {
@@ -787,6 +818,9 @@ window.__ModuleLoader__.load({
         var thumbsSt = React.useState(0);
         var thumbsTick = thumbsSt[0];
         var setThumbsTick = thumbsSt[1];
+        var thumbDataSt = React.useState({});
+        var thumbData = thumbDataSt[0];
+        var setThumbData = thumbDataSt[1];
         var nameSt = React.useState("");
         var schemeName = nameSt[0];
         var setName = nameSt[1];
@@ -815,20 +849,43 @@ window.__ModuleLoader__.load({
           return function () { clearTimeout(t); };
         }, [draft]);
 
-        // 方案缩略图：把方案引用的媒体从 IndexedDB 载入缓存（idb: 引用）
+        // 方案缩略图：按方案实际背景生成（图片/壁纸直接显示，视频抓首帧）
         React.useEffect(function () {
-          var jobs = [];
-          (loadSchemes() || []).forEach(function (s) {
-            var c = s && s.config;
-            if (!c || typeof c !== "object") return;
-            [c.backgroundUrl, c.videoUrl].forEach(function (ref) {
-              if (!isMediaRef(ref)) return;
-              var mid = ref.slice(MEDIA_PREFIX.length);
-              if (mediaCache[mid]) return;
-              jobs.push(idbGet(mid).then(function (blob) {
-                if (blob) { setMediaCache(mid, URL.createObjectURL(blob)); setThumbsTick(function (n) { return n + 1; }); }
-              }).catch(function () {}));
+          function setThumb(name, url) {
+            setThumbData(function (prev) {
+              if (prev[name] === url) return prev;
+              var n = Object.assign({}, prev);
+              n[name] = url;
+              return n;
             });
+          }
+          function ensureMedia(ref, onUrl) {
+            if (!isMediaRef(ref)) { onUrl(ref); return; }
+            var mid = ref.slice(MEDIA_PREFIX.length);
+            if (mediaCache[mid]) { onUrl(mediaCache[mid]); return; }
+            idbGet(mid).then(function (blob) {
+              if (blob) { setMediaCache(mid, URL.createObjectURL(blob)); onUrl(mediaCache[mid]); }
+              else onUrl("");
+            }).catch(function () { onUrl(""); });
+          }
+          (loadSchemes() || []).forEach(function (s) {
+            var name = s && s.name;
+            var cfg = s && s.config;
+            if (!name || !cfg || typeof cfg !== "object") return;
+            if (cfg.useBackground === false) { setThumb(name, ""); return; }
+            if (cfg.useWallpaper && WALLPAPER_DATA_URI !== "") { setThumb(name, WALLPAPER_DATA_URI); return; }
+            if (cfg.backgroundType === "video" && cfg.videoUrl) {
+              ensureMedia(cfg.videoUrl, function (url) {
+                if (url) captureVideoFrame(url, function (frame) { setThumb(name, frame || ""); });
+                else setThumb(name, "");
+              });
+              return;
+            }
+            if (cfg.backgroundType === "image" && cfg.backgroundUrl) {
+              ensureMedia(cfg.backgroundUrl, function (url) { setThumb(name, url || ""); });
+              return;
+            }
+            setThumb(name, "");
           });
           return function () {};
         }, [schemes, thumbsTick]);
@@ -920,14 +977,6 @@ window.__ModuleLoader__.load({
           releaseMediaRef(draft.videoUrl);
           updateDraft({ backgroundUrl: "", videoUrl: "", useWallpaper: false, useBackground: true });
         }
-        // 方案缩略图元信息：url 为空则显示 label 占位
-        function schemeThumbMeta(cfg) {
-          if (!cfg || cfg.useBackground === false) return { url: "", label: "无背景" };
-          if (cfg.useWallpaper && WALLPAPER_DATA_URI !== "") return { url: WALLPAPER_DATA_URI, label: "" };
-          if (cfg.backgroundType === "image" && cfg.backgroundUrl) return { url: resolvedMediaUrl(cfg.backgroundUrl), label: "" };
-          if (cfg.backgroundType === "video" && cfg.videoUrl) return { url: "", label: "视频背景" };
-          return { url: "", label: "无背景" };
-        }
 
         var P = draft.palette;
         return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: "10px", padding: "16px 0" } },
@@ -982,14 +1031,20 @@ window.__ModuleLoader__.load({
               (isMediaRef(draft.backgroundUrl) || isMediaRef(draft.videoUrl)) ? React.createElement("button", { type: "button", onClick: clearUploadedMedia, style: ghostBtnStyle(false) }, "清除已上传媒体") : null
             ]),
             group("我的方案", false, [
-              row("方案名称", textInput(schemeName, "如「深夜蓝」", function (v) { setName(v); })),
-              React.createElement("button", { type: "button", onClick: saveScheme, style: applyBtnStyle(false) }, "保存当前方案"),
+              React.createElement("div", { style: { display: "flex", gap: "8px", alignItems: "stretch" } },
+                React.createElement("input", { type: "text", value: schemeName, placeholder: "方案名称，如「深夜蓝」", onChange: function (e) { setName(e.target.value); }, style: Object.assign({}, inputStyle(), { flex: "1 1 auto", minWidth: "0" }) }),
+                React.createElement("button", { type: "button", onClick: saveScheme, title: "把当前设置保存为命名方案", style: { padding: "0 18px", borderRadius: "10px", border: "1px solid transparent", background: "var(--dsw-alias-button-primary-fill)", color: "#ffffff", fontSize: "13px", fontWeight: "600", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" } }, "保存方案")
+              ),
               schemes.length > 0 ? React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" } },
                 schemes.map(function (sc) {
-                  var meta = schemeThumbMeta(sc.config);
+                  var cfg2 = sc.config || {};
+                  var noBg = cfg2.useBackground === false;
+                  var isVid = !noBg && cfg2.backgroundType === "video";
+                  var thumb = thumbData[sc.name] || "";
+                  var phText = noBg ? "无背景" : (isVid && !thumb ? "视频" : "");
                   return React.createElement("div", { key: sc.name, "data-scheme": sc.name, onClick: function () { applyScheme(sc.config); }, style: { cursor: "pointer", borderRadius: "10px", border: "1px solid var(--dsw-alias-border-l2)", overflow: "hidden", background: "var(--dsw-alias-bg-layer-2)", transition: "border-color .15s ease" } },
-                    React.createElement("div", { style: { height: "54px", background: meta.url ? "url(" + meta.url + ") center/cover no-repeat" : "linear-gradient(135deg, var(--dsw-alias-bg-layer-3), var(--dsw-alias-bg-layer-1))", position: "relative" } },
-                      meta.url ? null : React.createElement("span", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: "var(--dsw-alias-label-tertiary)" } }, meta.label)
+                    React.createElement("div", { style: { height: "54px", background: thumb ? "url(" + thumb + ") center/cover no-repeat" : "linear-gradient(135deg, var(--dsw-alias-bg-layer-3), var(--dsw-alias-bg-layer-1))", position: "relative" } },
+                      thumb ? null : React.createElement("span", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: "var(--dsw-alias-label-tertiary)" } }, phText)
                     ),
                     React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px", padding: "7px 9px" } },
                       React.createElement("span", { style: { fontSize: "12px", fontWeight: "600", color: "var(--dsw-alias-label-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 } }, sc.name),
