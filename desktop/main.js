@@ -417,14 +417,15 @@ function createWindow() {
     try {
       win.webContents.insertCSS(`
         #__ds_titlebar {
-          position: fixed; top: 0; left: 0; right: 0; height: 36px; z-index: 2147483647;
+          position: fixed; top: 0; left: 0; width: 96px; height: 36px; z-index: 2147483647;
           display: flex; align-items: center;
-          background: var(--dsw-alias-bg-base, #111318);
-          border-bottom: 1px solid var(--dsw-alias-border-l1, rgba(255,255,255,.06));
+          background: transparent;
+           pointer-events: none;
+          border-bottom: none;
           -webkit-app-region: drag;
           padding: 0 12px; box-sizing: border-box;
         }
-        #__ds_titlebar .__ds_traffic { display: flex; gap: 8px; -webkit-app-region: no-drag; }
+        #__ds_titlebar .__ds_traffic { display: flex; gap: 8px; pointer-events: auto; -webkit-app-region: no-drag; }
         #__ds_titlebar .__ds_traffic button {
           width: 12px; height: 12px; border-radius: 50%; border: none; padding: 0;
           cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -436,8 +437,8 @@ function createWindow() {
         #__ds_max   { background: #28c840; }
 
         html, body { height: 100%; }
-        body { padding-top: 36px !important; box-sizing: border-box !important; overflow: hidden !important; }
-        #root { height: 100% !important; margin: 0 !important; }
+        body { padding-top: 0 !important; box-sizing: border-box !important; }
+        #root { min-height: 100% !important; margin: 0 !important; }
       `);
       win.webContents.executeJavaScript(`
         (function () {
