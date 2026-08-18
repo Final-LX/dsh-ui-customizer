@@ -414,7 +414,11 @@ function createWindow() {
       webSecurity: true
     }
   });
-  // 明确设置运行时窗口标题，避免被 Electron/页面导航标题覆盖。
+  // 固定原生窗口标题；阻止 Web 页面 <title>（例如插件宣传标题）覆盖它。
+  win.on("page-title-updated", (event) => {
+    event.preventDefault();
+    if (win && !win.isDestroyed()) win.setTitle("DeepSeek Harness");
+  });
   win.setTitle("DeepSeek Harness");
   win.loadURL(webUrl);
   // 系统原生标题栏模式：不向 Web 页面注入 DOM/CSS。
