@@ -277,10 +277,15 @@ function probeExistingDsh() {
   });
 }
 
-function startServer(skipProbe) {
+function startServer(existingDsh) {
   return new Promise(async (resolve, reject) => {
-    // 已有 DSH 实例在跑 → 直接复用，不重复起服务
-    if (!skipProbe && await probeExistingDsh()) {
+    // 已有 DSH 实例在跑 → 直接复用，不重复起服务。
+    // 传入布尔值时使用启动阶段已经完成的探测结果，避免探测后端口被占用的竞态；
+    // 崩溃恢复未传参时仍会重新探测。
+    const reuseExisting = typeof existingDsh === "boolean"
+      ? existingDsh
+      : await probeExistingDsh();
+    if (reuseExisting) {
       webUrl = `http://127.0.0.1:${PORT}`;
       ownsServer = false;
       log(`检测到已有 DSH 实例 ${webUrl}，直接复用`);
@@ -326,8 +331,24 @@ function startServer(skipProbe) {
 
     serverChild.on("exit", (code) => {
       log(`dsh 进程退出 code=${code}`);
+      // 启动竞态：探测后端口被其他 DSH 抢先监听时，改为复用那个实例。
+      if (!gotUrl && !settled && /EADDRINUSE|address already in use/i.test(errBuf)) {
+        probeExistingDsh().then((found) => {
+          if (found && !settled) {
+            settled = true;
+            clearTimeout(timer);
+            ownsServer = false;
+            webUrl = `http://127.0.0.1:${PORT}`;
+            log(`检测到启动竞态中的已有 DSH 实例 ${webUrl}，改为复用`);
+            resolve(webUrl);
+          } else if (!settled) {
+            settled = true;
+            clearTimeout(timer);
+            reject(new Error("DSH 进程提前退出（code=" + code + "）。stderr：" + (errBuf.slice(0, 800) || "（空）") + "\n日志：" + LOG_FILE));
+          }
+        });
       // 启动阶段就退出 → 立即报错，不等 60s
-      if (!gotUrl && !settled) {
+      } else if (!gotUrl && !settled) {
         settled = true;
         clearTimeout(timer);
         reject(new Error("DSH 进程提前退出（code=" + code + "）。stderr：" + (errBuf.slice(0, 800) || "（空）") + "\n日志：" + LOG_FILE));
@@ -502,7 +523,7 @@ if (!gotLock) {
       } else {
         ensureProfile();
       }
-      await startServer(true);
+      await startServer(existingDsh);
       createWindow();
       closeSplash();
       createTray();
