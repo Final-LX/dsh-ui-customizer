@@ -6,8 +6,6 @@
 //   → 日志落盘 + 崩溃恢复 + 托盘。
 const { app, BrowserWindow, Tray, Menu, nativeImage, dialog, shell, ipcMain } = require("electron");
 
-// 桌面壳不提供额外的 File/Edit/View/Window/Help 菜单，让 Web 页面保持完整可用。
-Menu.setApplicationMenu(null);
 const { spawn, spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
@@ -397,6 +395,8 @@ function closeSplash() {
 }
 
 function createWindow() {
+  // 必须在 app ready 后设置，否则 Windows/Linux 可能仍保留默认 File/Edit/View 菜单。
+  Menu.setApplicationMenu(null);
   win = new BrowserWindow({
     width: 1280,
     height: 840,
@@ -414,6 +414,8 @@ function createWindow() {
       webSecurity: true
     }
   });
+  // 明确设置运行时窗口标题，避免被 Electron/页面导航标题覆盖。
+  win.setTitle("DeepSeek Harness");
   win.loadURL(webUrl);
   // 系统原生标题栏模式：不向 Web 页面注入 DOM/CSS。
   win.webContents.on("dom-ready", () => {
