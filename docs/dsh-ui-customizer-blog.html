@@ -284,18 +284,18 @@
   <!-- ============ 桌面版 ============ -->
   <section class="dsui-body">
     <div class="dsui-h2-line"><h2 class="dsui-h2">桌面版：开箱即用的 DSH 客户端</h2></div>
-    <p class="dsui-h2-sub">不想碰命令行？直接下载桌面客户端。DSH 运行时和主题插件全部随包内置，装完打开就是带「DIY 主题」的完整 DSH。</p>
+    <p class="dsui-h2-sub">不想使用命令行？直接下载 Windows 桌面客户端。DSH 运行时和主题插件随包内置，安装后即可打开带「DIY 主题」的完整 DSH。</p>
 
     <div class="dsui-grid">
       <div class="dsui-card">
         <span class="dsui-num">01</span>
         <h4>完全自包含</h4>
-        <p>整套 DSH 运行时与主题插件随包内置，无需 Node、pnpm、git，首启也无需联网。</p>
+        <p>Windows 安装包内置 DSH 运行时与主题插件；目标机器无需预装 Node.js、pnpm 或 git。首次使用仍需按 DSH 引导配置模型和 API key。</p>
       </div>
       <div class="dsui-card">
         <span class="dsui-num">02</span>
         <h4>独立原生窗口</h4>
-        <p>macOS 风格红绿灯标题栏，背景边框跟随 DIY 主题；托盘常驻，关窗最小化不退出。</p>
+        <p>Windows 原生标题栏，窗口标题为 DeepSeek Harness；托盘常驻，关窗默认隐藏到托盘，不退出服务。</p>
       </div>
       <div class="dsui-card">
         <span class="dsui-num">03</span>
@@ -321,7 +321,7 @@
   <!-- ============ 安装（网页端插件） ============ -->
   <section class="dsui-body">
     <div class="dsui-h2-line"><h2 class="dsui-h2">网页端插件安装</h2></div>
-    <p class="dsui-h2-sub">如果不用桌面端、想在现有网页版里用主题插件，按下面三步。只需 Node.js，装进 web profile 后重启服务即可。</p>
+    <p class="dsui-h2-sub">如果不使用桌面端，也可以把插件安装到现有的 DSH Web profile。推荐使用仓库中的 PowerShell 脚本；需要 Node.js，完成后重启 DSH 服务。</p>
 
     <ol class="dsui-steps">
       <li>
@@ -349,7 +349,7 @@
     </ol>
     <div class="dsui-code"><b>npx</b> @deepseek-ai/dsh web</div>
 
-    <p class="dsui-h2-sub" style="margin-top: 18px; margin-bottom: 0;">没有 git 或 pnpm？在仓库根目录运行 <code>.\install-web.ps1</code>，即可自动复制插件并登记 loader。</p>
+    <p class="dsui-h2-sub" style="margin-top: 18px; margin-bottom: 0;">没有 git 或 pnpm？在仓库根目录运行 <code>.\install-web.ps1</code>，即可复制插件并登记 loader。首次使用仍需按 DSH 的模型和 API key 引导完成配置。</p>
   </section>
 
   <!-- ============ 实现原理 ============ -->

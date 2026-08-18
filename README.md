@@ -1,79 +1,104 @@
-# DSH 桌面客户端 + DIY 主题
+# DSH UI Customizer
 
-给 [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) 加一套「DIY 主题」定制面板，并提供一个开箱即用的桌面客户端。
+为 [DeepSeek Harness（DSH）](https://github.com/deepseek-ai/deepseek-harness) 提供可视化主题定制插件，并附带一个 Windows 桌面客户端。
 
-> **不需要会命令行**：下载 exe → 双击安装 → 打开就能用。
+## 先看这里：你应该选择哪种方式？
 
-## 这是什么
+| 你的情况 | 推荐方式 |
+|---|---|
+| 不想安装 Node.js，不想使用命令行 | 下载 Windows 桌面客户端 |
+| 已经在使用 `dsh web`，只想安装主题插件 | 使用网页端安装脚本 |
+| 想修改源码或重新打包 | 按本文末尾的开发者说明操作 |
 
-- **DIY 主题（dsh-ui-customizer）**：在「设置 → DIY 主题」里改配色、字体、背景、圆角、阴影，改完立即生效，配置保存在浏览器里。
-- **桌面客户端（desktop/）**：把 DSH 网页界面包成一个独立窗口——macOS 风格红绿灯标题栏、托盘常驻，并且和网页版**共享同一个 DSH 实例**，会话实时同步。
+> 桌面客户端和网页版使用同一个 DSH 服务端口（默认 `3080`）。日常使用时只需要选择一个入口，不要同时启动两个独立的 `dsh web` 服务。
 
-## 下载安装（推荐：桌面客户端）
+## Windows 桌面客户端
 
-1. 打开 [Releases](https://github.com/Final-LX/dsh-ui-customizer/releases/latest) 页面，下载 `DSH-Setup-<版本>.exe`；
-2. 双击运行，在安装向导里点「安装」（可改安装目录）；
-3. 若弹 Windows SmartScreen 提示，点「更多信息」→「仍要运行」（因为安装包未签名）；
-4. 装完勾选「运行 DSH」直接启动，或从桌面/开始菜单的「DSH」快捷方式启动。
+桌面客户端是一个 Electron 外壳，负责启动或复用本地 DSH 服务，然后在原生窗口中打开 DSH Web 页面。它不会重写 DSH 页面的布局，也不会接管插件的按钮、侧边栏或会话区域。
 
-**完全离线自包含**：不需要装 Node、pnpm、git，首启也不需要联网。
+### 安装
 
-- 最新版：<https://github.com/Final-LX/dsh-ui-customizer/releases/latest>
-- 全部版本：<https://github.com/Final-LX/dsh-ui-customizer/releases>
+1. 打开 [最新 Release](https://github.com/Final-LX/dsh-ui-customizer/releases/latest)。
+2. 下载 `DSH-Setup-<版本>.exe`。
+3. 双击安装包，按向导完成安装。
+4. 如果 Windows SmartScreen 提示程序未签名，选择“更多信息”后点击“仍要运行”。
+5. 安装完成后，从桌面或开始菜单启动 DSH。
 
-## 使用
+桌面客户端是 Windows 自包含版本：目标机器不需要预先安装 Node.js、pnpm、git，正常启动不依赖网络。当前发布包未进行代码签名，因此可能出现 SmartScreen 提示。
 
-1. 打开桌面客户端（或网页版 `dsh web`）；
-2. 右上角「设置」→ 左侧「DIY 主题」；
-3. 按分组调整，改完立即预览；
-4. 点「应用」保存，「还原」撤销未保存的更改。
+### 第一次使用
 
-### 能调什么
+1. 启动 DSH。
+2. 按 DSH 自带引导配置模型和 API key。
+3. 打开右上角“设置”。
+4. 在设置侧栏选择“DIY 主题”。
+5. 修改设置后先点击“试穿”预览；确认后点击“应用”。
+6. 点击“还原”可以撤销尚未应用的修改。
 
-| 分组 | 控件 | 说明 |
+桌面客户端使用 Windows 原生窗口标题栏，窗口标题为 **DeepSeek Harness**。Web 页面中的 DSH logo、侧边栏、会话日志下载和第三方插件均由 Web 页面自己管理。
+
+## DIY 主题可以调整什么
+
+| 分组 | 功能 | 说明 |
 |---|---|---|
-| （总开关） | 启用 DIY 主题 | 关闭后撤销全部覆盖 |
-| 皮肤中心 | 8 张色板卡片 | 点选即试穿整套配色/通透度/毛玻璃/圆角 |
-| 配色 | 品牌/强调/成功/警告/错误 | 5 个取色器，带 hex 值 |
-| | 中性色调 | 蓝灰/冷灰/暖灰/石墨 |
-| 字体 | 界面字体 / 代码字体 | 下拉选择预设字体栈 |
-| | 整体缩放 | 80–140% |
-| | 字号缩放 | 80–130% |
-| 背景 | 使用内置壁纸 | 开关内嵌壁纸 |
-| | 上传背景图 | 本地图片，压缩后存 IndexedDB |
-| | 上传视频 | mp4，存 IndexedDB，刷新后恢复 |
-| | 背景 URL | 网络图或 data URI |
-| | 面板通透度 | 0–100% |
-| | 毛玻璃强度 | 0–30px，0 关闭（最省性能） |
-| 组件 | 阴影层级 | 无/轻/标准/强 |
-| | 圆角 | 0–24px |
-| 我的方案 | 命名方案 | 整套配置存成方案，一键切换 |
+| 总开关 | 启用 DIY 主题 | 关闭后撤销本插件的主题覆盖 |
+| 皮肤中心 | 预设皮肤 | 选择预设后可以继续手动调整 |
+| 配色 | 品牌、强调、成功、警告、错误色 | 支持颜色选择器和十六进制颜色 |
+| 配色 | 中性色调 | 蓝灰、冷灰、暖灰、石墨等方向 |
+| 字体 | 界面字体、代码字体 | 使用预设字体栈 |
+| 字体 | 整体缩放、字号缩放 | 分别控制界面比例和文字比例 |
+| 背景 | 内置壁纸、本地图片、视频、URL | 本地图片和视频保存在浏览器本地 |
+| 背景 | 面板通透度、毛玻璃强度 | 数值过高可能增加渲染负担 |
+| 组件 | 阴影、圆角 | 调整组件层次感和圆角大小 |
+| 我的方案 | 保存和切换方案 | 将整套主题配置保存为命名方案 |
 
-### 截图
+主题修改保存在当前浏览器环境中。桌面客户端和普通浏览器属于不同的浏览器环境，因此主题配置、方案、上传的图片和视频不会自动互通；DSH 服务端的会话数据仍然可以共享。
 
-![整体效果](docs/screenshot-overview.png)
+## 网页端安装
 
-![DIY 主题设置面板](docs/screenshot-panel.png)
+### 方案 A：使用安装脚本（只需要 Node.js）
 
-## 常见问题
+适合已经安装 Node.js、但没有 git 或 pnpm 的用户。
 
-- **SmartScreen 提示「Windows 已保护你的电脑」？** 点「更多信息」→「仍要运行」。这是未签名程序的正常提示，不影响使用。
-- **桌面版和网页版数据同步吗？** 会话（聊天记录）同步——两者共用同一个 DSH 实例和 3080 端口；但主题配置存在各自浏览器的 localStorage 里，不互通。
-- **主题配置和上传的图片存哪？** 都存在浏览器本地（localStorage + IndexedDB），不上传到 DSH 服务器端。
+1. 从 GitHub 下载本仓库 ZIP 并解压。
+2. 在 PowerShell 中进入解压后的仓库目录。
+3. 执行：
 
----
+```powershell
+.\install-web.ps1
+```
 
-## 只用插件（网页端，进阶）
+4. 启动网页版：
 
-> 前提：已装 [Node.js](https://nodejs.org)（含 npx）、[git](https://git-scm.com)、[pnpm](https://pnpm.io)。**不想装这些就用上面的桌面客户端，它自带一切。**
+```powershell
+npx @deepseek-ai/dsh web
+```
 
-如果你已经会用命令行，且只想在网页版用主题插件、不装桌面客户端：
+5. 打开 DSH 的“设置 → DIY 主题”。
+
+脚本会把插件复制到 `~\.dsh\profiles\web\node_modules\dsh-ui-customizer`，并在 `cordis.patch.yml` 中登记插件 loader。脚本可以重复运行。
+
+### 方案 B：使用 DSH 插件命令
+
+适合已经安装 Node.js、pnpm 和 git 的用户：
 
 ```powershell
 dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
 ```
 
-然后在 `~\.dsh\profiles\web\cordis.patch.yml` 里登记 loader 行并重启：
+如果命令行提示找不到 `dsh`，可以改用：
+
+```powershell
+npx @deepseek-ai/dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
+```
+
+如果你的 profile 没有自动登记 loader，请打开：
+
+```text
+%USERPROFILE%\.dsh\profiles\web\cordis.patch.yml
+```
+
+确认其中包含：
 
 ```yaml
 - insert:
@@ -81,103 +106,99 @@ dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
       name: dsh-ui-customizer
 ```
 
-```powershell
-npx @deepseek-ai/dsh web
+然后完全退出并重新启动 DSH Web。不要在已经占用 `3080` 的桌面客户端旁边再次启动第二个 `dsh web`；二者默认使用同一个端口。
+
+## 数据、安全与兼容性
+
+- 主题配置和方案保存在浏览器的 `localStorage`。
+- 本地图片和视频保存在浏览器的 IndexedDB。
+- 本插件不会把主题配置或本地媒体上传到 DSH 服务端。
+- 网络图片或视频 URL 是否能加载，取决于地址、协议、浏览器安全策略和服务器响应。
+- 大尺寸图片、高清视频和高强度毛玻璃可能增加内存或 GPU/CPU 负担。
+- DSH 仍处于快速迭代阶段，官方 token、slot 和页面结构变化可能影响插件兼容性。
+
+## 常见问题
+
+### 桌面端和网页版能不能同时打开？
+
+可以复用同一个已经运行的 DSH 实例，但不建议同时启动两个 `dsh web` 进程。默认端口是 `3080`，第二个进程通常会收到 `EADDRINUSE` 端口占用错误。
+
+### 关闭桌面窗口后，为什么 DSH 还在运行？
+
+桌面客户端默认关闭窗口时隐藏到系统托盘，不会立即退出 DSH。请在托盘菜单中选择“退出”才能结束桌面客户端及其管理的服务。
+
+### 主题配置为什么没有在浏览器和桌面端同步？
+
+因为 Electron 和普通浏览器使用不同的浏览器 profile。会话由 DSH 服务端管理，所以可以共享；主题配置和 IndexedDB 媒体属于浏览器端数据，所以默认独立保存。
+
+### 如何查看启动日志？
+
+桌面客户端托盘菜单中选择“打开日志”。默认日志文件为：
+
+```text
+%USERPROFILE%\.dsh\desktop.log
 ```
 
-打开右上角「设置 → DIY 主题」即可开始定制。
-
-### 只有 Node.js、没有 git/pnpm？用脚本装
-
-1. 在本仓库 GitHub 页面点「Code → Download ZIP」，下载并解压；
-2. 在解压出的目录里运行：
-
-```powershell
-.\install-web.ps1
-```
-
-3. 启动网页版：`npx @deepseek-ai/dsh web`，然后打开「设置 → DIY 主题」。
-
-脚本会做两件事：把插件复制进 web profile，并自动登记 loader（幂等，可重复运行）。全程**不需要 git 和 pnpm**。
-
----
-
-## 开发者
-
-> 普通用户无需看这里。下面内容面向想改代码、跑测试、重新打包的人。
-
-### 桌面端开发与打包
-
-```powershell
-cd desktop
-npm install    # 安装 Electron（首次下载 ~190MB 二进制）
-npm start      # 开发模式运行
-npm run dist   # 生成 Windows 安装包
-```
-
-完整说明见 [`desktop/README.md`](desktop/README.md)。
-
-### 测试
-
-```powershell
-npm test
-# 等价于：
-node tools/test-client.cjs   # 无头测试：factory+apply+渲染+防抖+上传
-node tools/test-render.cjs   # 真实 React 渲染测试
-node tools/test-idb.cjs      # IndexedDB 媒体存储：上传→引用→刷新恢复
-```
-
-Token 兼容性检查（CI 里跑，需先装官方 DSH 拉取 `dsh-web-frontend` 的 dist CSS）：
-
-```powershell
-pnpm add -D --ignore-scripts "@deepseek-ai/dsh@latest"
-node tools/test-tokens.cjs
-```
-
-### CI（同步官方更新）
-
-`.github/workflows/ci.yml` 用 GitHub Actions 跑「官方 latest + 固定版」双矩阵，执行上面的测试 + token 比对；每天 UTC 03:00 定时跑。官方还是 RC 阶段、契约（token 名、`dsh.client`、DOM 类名）易变，红灯了就说明要核对升级。
-
-### 换壁纸
-
-```powershell
-npm run wallpaper -- "C:\path\to\image.png"
-```
-
-图片压成 1920px JPEG，写入 `assets/wallpaper.txt` 并内嵌进 `lib/client.js`，然后重新 `add` + 重启。
-
-### 关键契约（跨 DSH 版本升级时核对）
-
-- `exports` 必须暴露 `"./package.json"`：`client-modules` 靠 `require.resolve('<pkg>/package.json')` 读 `dsh.client`，缺失会被判为「非客户端包」。
-- 客户端 bundle 是 classic `<script>`，必须以 `window.__ModuleLoader__.load({...})` 注册 factory。
-- `package.json` 的 `dsh.client` 需含 `{ platform: "web", immediately: true, inject: [...] }`。
+## 开发者说明
 
 ### 目录结构
 
-```
+```text
 dsh-ui-customizer/
-├── package.json          # exports["./client"] + dsh.client + peerDeps + scripts
-├── install.ps1           # 一键安装（用 pnpm，开发用）
-├── install-web.ps1       # 一键安装（网页端，无需 git/pnpm）
-├── docs/                 # 截图
-├── assets/wallpaper.txt  # 壁纸 data URI
-├── .github/workflows/ci.yml  # CI 矩阵 + token 比对
-├── desktop/              # Electron 桌面客户端（自包含）
-│   ├── main.js           # 主进程：启动/复用 DSH、窗口、托盘、自包含引导
-│   ├── preload.js        # 最小窗口控制 IPC
-│   ├── splash.html       # 启动等待画面（正在启动）
-│   ├── vendor/           # 随包内置的主题插件副本（file: 依赖）
-│   ├── scripts/          # after-pack（rcedit 图标）+ 图标渲染
-│   ├── assets/           # 图标（icon.ico / icon.svg / icon-source.webp）
-│   └── README.md         # 桌面端完整文档
-├── tools/
-│   ├── set-wallpaper.cjs    # 换壁纸
-│   ├── inject-wallpaper.cjs # 仅重新内嵌壁纸
-│   ├── test-client.cjs      # 无头测试
-│   ├── test-render.cjs      # 真实 React 渲染测试
-│   ├── test-idb.cjs         # IndexedDB 媒体存储测试
-│   └── test-tokens.cjs      # token 兼容性检查
-└── lib/
-    ├── index.js          # 宿主侧 no-op 入口
-    └── client.js         # 浏览器 bundle：设置面板 + 主题 + CSS
+├── lib/client.js                 # 浏览器端 classic bundle
+├── lib/index.js                  # 宿主侧入口
+├── package.json                  # 插件元数据和 dsh.client 配置
+├── desktop/                      # Electron Windows 桌面客户端
+│   ├── main.js                   # 主进程：服务、窗口、托盘、更新
+│   ├── preload.js                # 最小窗口 IPC
+│   ├── splash.html               # 启动画面
+│   ├── vendor/                   # 桌面端内置插件副本
+│   └── README.md                 # 桌面端开发说明
+├── tools/                        # 测试和资源工具
+├── docs/                         # 截图和介绍文章
+├── install.ps1                   # 使用 DSH/pnpm 的网页端安装脚本
+└── install-web.ps1               # 只依赖 Node.js 的网页端安装脚本
 ```
+
+### 安装依赖和测试
+
+```powershell
+npm test
+```
+
+等价于：
+
+```powershell
+node tools/test-client.cjs
+node tools/test-render.cjs
+node tools/test-idb.cjs
+```
+
+### 桌面端开发和打包
+
+```powershell
+cd desktop
+npm install
+npm start       # 开发模式
+npm run pack    # 生成 dist\win-unpacked
+npm run dist    # 生成 Windows NSIS 安装包
+```
+
+打包使用 npm 的扁平 `node_modules`，因为当前 DSH 运行时包含大量 peer/service definition 依赖，electron-builder 对 npm 布局的收集更稳定。发布文件通常为：
+
+```text
+DSH-Setup-<版本>.exe
+DSH-Setup-<版本>.exe.blockmap
+latest.yml
+```
+
+### 主题插件关键契约
+
+- `package.json` 必须导出 `./package.json`，以便 DSH 读取 `dsh.client`。
+- 客户端 bundle 必须以 `window.__ModuleLoader__.load({...})` 注册。
+- `dsh.client` 需要声明 `platform: "web"`、`immediately: true` 和所需的 `inject` 服务。
+- 升级 DSH 版本后，应运行测试并检查官方 token/CSS 契约。
+
+## 许可证
+
+MIT

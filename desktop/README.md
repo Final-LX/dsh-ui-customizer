@@ -1,147 +1,197 @@
 # DSH 桌面客户端
 
-用 Electron 把 DSH 的浏览器界面包成独立原生窗口，配合 [`dsh-ui-customizer`](../README.md) 主题插件使用。
+这是一个 Windows Electron 桌面外壳：它启动或复用本机 DSH Web 服务，再使用原生窗口打开网页界面。Web 页面和插件仍然按浏览器中的原生逻辑运行，桌面端不重写页面布局。
 
-- **向导式安装**：安装包带「欢迎 → 安装 → 完成」向导页，进度清晰，装完可选「运行 DSH」。
-- **启动画面**：首次启动先显示「正在启动」等待画面，DSH 就绪后自动进入主界面。
-- **macOS 风格红绿灯标题栏**：左上角红/黄/绿三个按钮，背景边框跟随 DIY 主题，无多余文字。
-- **与网页端共享实例**：端口统一 3080，会话实时同步、不并发写会话日志。
-- **托盘常驻**：渐变图标，关窗最小化到托盘，不占用任务栏。
-- **自包含、首启离线**：整套 DSH 运行时与主题插件随包内置，全新机器无需 Node/pnpm/git、也无需联网即可启动。
-- **日志落盘 + 崩溃恢复**。
+## 面向普通用户
 
-## 下载安装
+### 安装包包含什么
 
-### 安装包文件说明
-
-| 文件 | 说明 |
+| 文件 | 用途 |
 |---|---|
-| `DSH-Setup-<版本>.exe` | Windows 安装程序，双击运行安装向导，装完生成桌面/开始菜单「DSH」快捷方式 |
-| `DSH-Setup-<版本>.exe.blockmap` | 增量更新用的块映射文件，自动更新时用，普通安装无需理会 |
-| `latest.yml` | 自动更新元数据（版本号 + sha512 校验值） |
+| `DSH-Setup-<版本>.exe` | Windows 安装程序，普通用户只需下载这个文件 |
+| `DSH-Setup-<版本>.exe.blockmap` | Electron 自动更新使用，普通安装不需要单独打开 |
+| `latest.yml` | Electron 自动更新元数据 |
+
+普通用户只需要下载 `.exe` 安装程序。`.blockmap` 和 `latest.yml` 由发布者上传到同一个 Release，供自动更新使用。
 
 ### 安装步骤
 
-1. 打开 <https://github.com/Final-LX/dsh-ui-customizer/releases/latest>，下载 `DSH-Setup-<版本>.exe`；
-2. 双击运行，在安装向导里点「安装」（可改安装目录）；
-3. 未签名程序，SmartScreen 会提示，点「仍要运行」；
-4. 装完勾选「运行 DSH」直接启动，或从桌面/开始菜单的「DSH」快捷方式启动。
+1. 从项目的 [最新 Release](https://github.com/Final-LX/dsh-ui-customizer/releases/latest) 下载 `DSH-Setup-<版本>.exe`。
+2. 双击安装程序，按向导选择安装目录。
+3. 如果 Windows SmartScreen 提示程序未签名，点击“更多信息”→“仍要运行”。
+4. 安装完成后，从桌面或开始菜单启动 DSH。
 
-## 使用
+当前安装包未进行代码签名，因此首次运行可能出现 SmartScreen 提示。这是分发状态提示，不代表安装包需要 Node.js 或 git。
 
-1. 启动「DSH」后，首次会进入 DSH 自带的「填 API key」引导（和官方 `dsh web` 一致，桌面端不代填）；
-2. 进入主界面后，右上角「设置」→ 左侧「DIY 主题」即可定制主题；
-3. 关窗口默认最小化到托盘（不退出），托盘图标右键可「退出」。
+### 第一次启动
+
+桌面端会显示启动画面，并按以下顺序工作：
+
+1. 检查 `~\.dsh\profiles\web`；
+2. 如果 `3080` 已有可用 DSH Web 服务，则直接复用；
+3. 如果没有，则使用安装包内置的 DSH 运行时启动服务；
+4. 服务就绪后，在窗口中打开 DSH Web 页面。
+
+如果是首次使用 DSH，仍需要在 DSH 自带设置中配置模型和 API key。桌面客户端不会替你填写或托管 API key。
+
+### 使用 DIY 主题
+
+打开 DSH 后：
+
+```text
+设置 → DIY 主题
+```
+
+修改主题后：
+
+- “试穿”：只预览当前草稿；
+- “应用”：保存当前配置；
+- “还原”：撤销尚未应用的修改；
+- “重置为默认”：把草稿恢复为默认值；
+- “我的方案”：保存、应用或删除命名方案。
+
+可调整内容包括配色、字体、缩放、背景图片/视频、面板通透度、毛玻璃强度、阴影和圆角。
+
+## 桌面端行为
+
+### 窗口
+
+桌面端使用 Windows 原生标题栏：
+
+- 窗口标题固定为 `DeepSeek Harness`；
+- 使用安装包内的 `assets/icon.ico` 作为窗口和任务栏图标；
+- 不显示 Electron 默认的 File、Edit、View、Window、Help 应用菜单；
+- 不向 Web 页面注入标题栏 DOM 或 CSS；
+- 不修改 Web 页面的 `body`、`#root`、滚动模型或 sidebar CSS 变量。
+
+因此 DSH 原生按钮、`dsh-better-sidebar`、session log 下载按钮和其他 Web 插件不会被桌面层覆盖。侧边栏展开后的主内容区域由 Web 插件自己的布局逻辑负责调整。
+
+### 托盘
+
+关闭窗口默认会隐藏到系统托盘，DSH 服务继续运行。托盘右键菜单提供：
+
+- 显示窗口；
+- 刷新窗口；
+- 打开日志；
+- 退出。
+
+如果需要真正结束桌面客户端，请在托盘菜单中点击“退出”。
+
+### 和网页版的关系
+
+桌面端和网页版默认使用：
+
+```text
+地址：http://127.0.0.1:3080
+profile：web
+```
+
+桌面端启动时会探测已有的 DSH Web 服务并复用它。不要在桌面端已经启动并占用 `3080` 时，再启动第二个独立的 `npx @deepseek-ai/dsh web`；如果确实需要运行命令行版本，请先退出桌面客户端，或显式使用其他端口和 profile。
+
+会话由 DSH 服务端管理，因此复用同一实例时可以同步；主题配置和本地媒体属于浏览器端数据，桌面端和普通浏览器不会自动共享这些内容。
+
+## 数据和密钥
+
+| 数据 | 默认位置 | 说明 |
+|---|---|---|
+| DSH profile、会话、服务日志 | `%USERPROFILE%\.dsh\` | 包含 `profiles\web` 和 `desktop.log` |
+| 桌面端 localStorage/IndexedDB | Electron userData 目录 | 保存主题配置、方案、图片和视频引用 |
+| 主题插件代码 | 安装目录 | 桌面端随包内置 |
+
+桌面壳不读取或代管 API key。你可以使用 DSH 设置页面配置，或使用 DSH 支持的环境变量，例如：
+
+```powershell
+$env:DEEPSEEK_API_KEY = "你的 key"
+$env:DEEPSEEK_BASE_URL = "可选的网关地址"
+```
+
+不要把真实密钥提交到仓库、截图或日志中。
 
 ## 常见问题
 
-- **SmartScreen 提示？** 点「更多信息」→「仍要运行」，未签名程序的正常提示。
-- **和网页版数据同步吗？** 会话（聊天记录）同步——共用 3080 端口和同一个 DSH 实例；主题配置各自独立（存在浏览器本地）。
-- **启动要等多久？** 约 2 秒会先显示「正在启动」画面，DSH 就绪后自动进入主界面。
+### 启动后白屏怎么办？
 
-## API key（与官方一致）
+先确认是否有旧的桌面进程或其他 DSH 进程占用 `3080`。再从托盘退出桌面端，重新启动。若仍失败，打开托盘菜单中的“打开日志”，把错误信息保存下来。
 
-桌面壳**不自动填 key、也不代管密钥**，行为和官方 `dsh web` 完全一致：
+### 看到端口占用错误怎么办？
 
-- 新用户首次打开窗口进入 DSH 自带「填 API key」引导（设置 → Models）；
-- 或走官方环境变量 `DEEPSEEK_API_KEY`（自定义网关再加 `DEEPSEEK_BASE_URL`），桌面壳 spawn DSH 时继承当前环境变量。
+典型错误是：
 
-## 数据都在哪
+```text
+EADDRINUSE: address already in use 127.0.0.1:3080
+```
 
-- **服务端** `~/.dsh/`：profile（含 `cordis.patch.yml` 里的 loader 登记）、会话、日志 `desktop.log`。主题插件本身随包内置在安装目录，不在 `~/.dsh`。
-- **浏览器端**（Electron `userData`，Windows 在 `%APPDATA%/dsh-ui-desktop/`）：localStorage（DIY 配置、方案）+ IndexedDB（上传的图片/视频）。
+这表示另一个程序已经使用 `3080`。桌面端能识别并复用正常的 DSH Web 实例，但不会复用任意占用该端口的程序。请关闭冲突服务后重试。
 
-> 注意：浏览器端数据按 origin 隔离，且网页浏览器和 Electron 是**不同的浏览器 profile**——所以 DIY 主题配置在网页端和桌面端是各自独立保存的（会话是同步的，主题配置不共享）。
+### 为什么主题在浏览器和桌面端不一样？
+
+Electron 和普通浏览器使用不同的浏览器 profile。主题配置、方案、图片和视频保存在各自的浏览器本地存储中；这是正常的。会话是否同步取决于两端是否连接到同一个 DSH 服务实例。
+
+### 如何找到日志？
+
+默认位置：
+
+```text
+%USERPROFILE%\.dsh\desktop.log
+```
+
+也可以通过托盘菜单“打开日志”查看。日志达到一定大小后会自动轮转，避免无限增长。
 
 ## 环境变量
 
-| 变量 | 默认 | 说明 |
+| 变量 | 默认值 | 作用 |
 |---|---|---|
-| `DSH_PROFILE` | `web` | 用哪个 DSH profile（web 模板自带 web-app） |
-| `DSH_PORT` | `3080` | 与网页端共享的端口；改端口会导致会话不再同步 |
-| `DSH_HOME` | `~/.dsh` | DSH 数据目录（profile、日志也在此） |
+| `DSH_PROFILE` | `web` | DSH profile 名称 |
+| `DSH_PORT` | `3080` | DSH Web 端口 |
+| `DSH_HOME` | `~\.dsh` | DSH 数据根目录 |
 
-## 已知限制
+如果修改 `DSH_PORT` 或 `DSH_PROFILE`，桌面端可能不再连接默认网页版使用的数据和服务。除非你清楚 profile 和端口的关系，否则建议保持默认值。
 
-- **未签名**：SmartScreen 会提示，点「仍要运行」。
-- 安全边界：`contextIsolation`/`sandbox`/`webSecurity` 全开，仅通过 `preload.js` 暴露最小窗口控制 IPC。
+## 开发者说明
 
----
-
-## 开发者
-
-> 普通用户无需看下面内容。以下面向想改代码、重新打包、排查问题的人。
-
-### 运行（开发模式）
+### 开发环境
 
 ```powershell
 cd desktop
-npm install    # 安装 Electron（首次下载 ~190MB 二进制）
+npm install
 npm start
 ```
 
-### 工作原理
+开发模式会安装 Electron 和桌面端依赖。生产安装包则把 DSH 运行时和主题插件一起打入，不依赖目标机器的 Node.js、pnpm、git。
 
-#### 启动 DSH 的运行器（三级回退）
+### 验证和打包
 
-1. 打包内嵌了 `@deepseek-ai/dsh` → 用 Electron 内嵌 Node（`ELECTRON_RUN_AS_NODE=1`）跑 `bin.js`；
-2. 本机 npx 缓存里有 `@deepseek-ai/dsh` → 用**系统 `node.exe` 直接跑 `bin.js`**（`shell:false`，避开 Electron 下 npx/cmd/shell 的 stdio 捕获问题——这是之前「启动超时」的根因）；
-3. 兜底回退 `npx`。
-
-#### 端口 3080 共享（关键）
-
-端口固定为 **3080**，与官方 `dsh web` 一致。桌面端启动时会先探测 3080 上是否已有 DSH 实例：
-
-- **有** → 直接复用（`ownsServer = false`），不重复起服务；退出时**不杀**这个共享实例，避免误伤网页端正在用的会话。
-- **没有** → 自己起一个（`ownsServer = true`），退出时回收。
-
-好处：网页端和桌面端是同一个 DSH 进程，**会话实时同步**；也不会两个进程并发写同一份会话日志导致 `corrupt Zstandard session log`。
-
-#### 窗口标题栏
-
-桌面端使用 Electron/Windows 系统原生标题栏（`frame: true`），窗口标题为 `DeepSeek Harness`，并关闭 Electron 默认应用菜单（File、Edit、View、Window、Help）。标题栏使用稳定的固定深灰蓝 `#20242B`；暂不启用 Electron `backgroundMaterial: "mica"`，避免当前 Electron/Windows GPU 合成路径造成启动白屏。桌面端不向 Web 页面注入标题栏 DOM 或 CSS，也不修改 `body`、`#root`、滚动模型或 sidebar CSS 变量。
-
-- 窗口控制、拖动区域、最大化和系统菜单由 Windows 原生窗口处理；
-- 使用 `assets/icon.ico` 作为窗口和任务栏图标，页面内 DSH logo 保持原样；
-- DIY 主题只作用于 Web 页面，网页和插件的布局、按钮命中区域、透明度由 Web 自己管理；
-- `dsh-better-sidebar` 展开时继续由其 `--dsh-sidebar-width` 和 `#root` 布局逻辑推动主对话区域，不受桌面壳干预；
-- 这是为了保证 Web 插件行为与浏览器中一致；当前 Windows 版本不再绘制左侧 macOS 红绿灯。
-
-#### 托盘
-
-托盘图标是品牌蓝→强调紫渐变的**多尺寸 ICO**（`assets/icon.ico`，16/24/32/48/256）。关窗默认最小化到托盘（不退出），托盘菜单「退出」才真正结束。
-
-#### 启动画面
-
-启动阶段（profile 初始化 + DSH 服务就绪约 2 秒）会先弹出一个小的启动窗口：深色背景 + 转圈动画 + 「正在启动，请稍候…」。DSH 就绪后自动关闭并切入主窗口；启动失败则先关掉再弹错误框。实现：`main.js` 的 `createSplash()/closeSplash()` + `splash.html`。
-
-### 打包分发
+在仓库根目录运行插件测试：
 
 ```powershell
-npm run pack           # 仅生成未打包目录 dist\win-unpacked（便携版，直接跑 DSH.exe）
-npm run dist           # 生成 Windows NSIS 安装包 dist\DSH Setup 0.1.5.exe
+npm test --prefix .\dsh-ui-customizer
 ```
 
-已内置的打包坑位规避（`package.json` build 字段）：
+在 `desktop` 目录运行：
 
-- `electronDist: node_modules/electron/dist`：复用本地 Electron 二进制，避免从 GitHub 下载 115MB zip（此网络下易损坏）。
-- `win.signAndEditExecutable: false`：跳过 winCodeSign 的 rcedit/签名——非管理员、未开「开发者模式」时 winCodeSign 解包里的 macOS 符号链接会报「无法创建符号链接」。exe 图标改由 `afterPack`（`scripts/after-pack.cjs`）用 rcedit 单独写入，不依赖 winCodeSign。
+```powershell
+npm run pack    # dist\win-unpacked，便携测试目录
+npm run dist    # Windows NSIS 安装包
+```
 
-#### 自包含打包（关键）
+打包前应关闭正在运行的 `dist\win-unpacked\DSH.exe`，否则 Windows 可能锁定 `icudtl.dat` 等文件并导致 `EBUSY`。
 
-安装包把整套 DSH 运行时都打了进去，目标机器**不需要装 Node / pnpm / git，首启也不需要联网**：
+### 运行器和离线行为
 
-- `@deepseek-ai/dsh`（完整 harness，含 dsh-base + dsh-web-app 等 bundle）随包内置；
-- `dsh-ui-customizer` 主题插件随包内置（`file:` 依赖直接进 node_modules），loader 从 profile 兜底目录解析到它，**不往 profile 里装任何东西**——这就是首启离线的根本原因。
+打包版优先使用随包内置的 `@deepseek-ai/dsh` 和 Electron 内嵌 Node。安装包模式下如果内置运行时缺失，桌面端会报错，不会偷偷通过 npx 联网补装。开发模式才保留外部运行器回退，便于本地调试。
 
-**为什么用 npm 而不是 pnpm**：electron-builder 的 node_modules 收集器对 pnpm 不可靠——25.x 会把 hoisted 布局铺成嵌套/残缺树（缺 `commander`、`cordis-plugin-group` 等），26.x 又会在 `pnpm list --depth Infinity` 上对这么大的 harness 直接 OOM。npm 天生扁平，electron-builder 对 npm 的处理是久经考验的主路径，所以打包侧改用 npm（`package-lock.json`）。
+### 发布文件
 
-**为什么把 19 个 `dsh-*`「服务定义」包加成直接依赖**：electron-builder 只沿 `dependencies`/`optionalDependencies` 收集，不沿 `peerDependencies`。DSH 的服务提供方把 `dsh-compaction`、`dsh-invariants`、`dsh-fs` 等作为 peer 引用，若不加成直接依赖，它们会被从生产树里丢掉，运行时 `ERR_MODULE_NOT_FOUND`。`node-addon-require-builtin-win32-x64-msvc` 也按同样思路加成直接依赖，保证原生内部加载器（HMR 与外置插件解析都要靠它）一定被带上。
+`npm run dist` 会生成带空格的 electron-builder 文件名。上传 Release 前，按照项目发布约定把它们重命名为：
 
-> 注意：`node-addon-require-builtin-*` 目前只加了 Windows 的 `win32-x64-msvc` 变体。以后要出 macOS / Linux 安装包，需照同样方式把对应平台变体（`-darwin-arm64`、`-darwin-x64`、`-linux-x64-gnu` 等）加为直接依赖。
+```text
+DSH-Setup-<版本>.exe
+DSH-Setup-<版本>.exe.blockmap
+latest.yml
+```
 
-#### 发 Release
+`latest.yml` 中的 `url`、文件大小和 SHA-512 必须与上传的 EXE 完全一致。三个文件应上传到同一个 GitHub Release。
 
-1. `npm run dist` 生成 `dist\DSH Setup 0.1.5.exe`（产物文件名带空格）。
-2. 把 exe 和 blockmap 重命名为连字符版（`DSH-Setup-0.1.5.exe`、`DSH-Setup-0.1.5.exe.blockmap`），与 `latest.yml` 里的 `url` 对齐——否则 electron-updater 自动更新会 404。
-3. 在 GitHub 上基于 `v0.1.5` 标签新建 Release，上传三个文件：`DSH-Setup-0.1.5.exe`、`DSH-Setup-0.1.5.exe.blockmap`、`latest.yml`。`latest` 永远指向最新版。
+### 平台范围
+
+当前自包含运行时和原生目录选择器补丁主要针对 Windows x64。package.json 中的其他平台目标不代表已经完成同等程度的发布和测试；如果要发布 macOS 或 Linux，需要补充对应原生依赖、图标、构建机和平台测试。
