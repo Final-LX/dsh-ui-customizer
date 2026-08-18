@@ -417,15 +417,16 @@ function createWindow() {
     try {
       win.webContents.insertCSS(`
         #__ds_titlebar {
-          position: fixed; top: 0; left: 0; width: 96px; height: 36px; z-index: 2147483647;
+          position: fixed; top: 0; left: 0; right: 0; height: 44px; z-index: 2147483647;
           display: flex; align-items: center;
-          background: transparent;
+          background: var(--dsw-alias-bg-base, #111318);
            pointer-events: none;
-          border-bottom: none;
+          border-bottom: 1px solid var(--dsw-alias-border-l1, rgba(255,255,255,.06));
           -webkit-app-region: drag;
-          padding: 0 12px; box-sizing: border-box;
+          padding: 0 16px; box-sizing: border-box;
         }
-        #__ds_titlebar .__ds_traffic { display: flex; gap: 8px; pointer-events: auto; -webkit-app-region: no-drag; }
+        #__ds_titlebar .__ds_drag { flex: 1 1 auto; height: 100%; -webkit-app-region: drag; pointer-events: auto; }
+         #__ds_titlebar .__ds_traffic { display: flex; gap: 10px; width: 88px; flex: 0 0 88px; pointer-events: auto; -webkit-app-region: no-drag; order: 0; }
         #__ds_titlebar .__ds_traffic button {
           width: 12px; height: 12px; border-radius: 50%; border: none; padding: 0;
           cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -437,8 +438,8 @@ function createWindow() {
         #__ds_max   { background: #28c840; }
 
         html, body { height: 100%; }
-        body { padding-top: 0 !important; box-sizing: border-box !important; }
-        #root { min-height: 100% !important; margin: 0 !important; }
+        body { padding-top: 44px !important; box-sizing: border-box !important; }
+        #root { min-height: calc(100% - 44px) !important; margin: 0 !important; }
       `);
       win.webContents.executeJavaScript(`
         (function () {
@@ -449,8 +450,11 @@ function createWindow() {
             + '<button id="__ds_close" title="关闭">×</button>'
             + '<button id="__ds_min" title="最小化">−</button>'
             + '<button id="__ds_max" title="最大化">+</button>'
-            + '</span>';
+            + '</span>'
+             + '<span class="__ds_drag" aria-hidden="true"></span>';
           document.body.prepend(bar);
+          document.body.style.paddingTop = "44px";
+          document.documentElement.style.setProperty("--dsh-desktop-titlebar-height", "44px");
           document.getElementById("__ds_close").addEventListener("click", function () { window.dshWin.close(); });
           document.getElementById("__ds_min").addEventListener("click", function () { window.dshWin.minimize(); });
           document.getElementById("__ds_max").addEventListener("click", function () { window.dshWin.toggleMaximize(); });
