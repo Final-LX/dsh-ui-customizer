@@ -425,8 +425,8 @@ function createWindow() {
           -webkit-app-region: drag;
           padding: 0 16px; box-sizing: border-box;
         }
-        #__ds_titlebar .__ds_drag { flex: 1 1 auto; height: 100%; -webkit-app-region: drag; pointer-events: auto; }
-         #__ds_titlebar .__ds_traffic { display: flex; gap: 10px; width: 88px; flex: 0 0 88px; pointer-events: auto; -webkit-app-region: no-drag; order: 0; }
+        #__ds_titlebar .__ds_drag { position: absolute; top: 0; left: 112px; right: 0; height: 12px; -webkit-app-region: drag; pointer-events: auto; }
+         #__ds_titlebar .__ds_traffic { display: flex; gap: 12px; width: 96px; flex: 0 0 96px; margin-left: 4px; pointer-events: auto; -webkit-app-region: no-drag; order: 0; }
         #__ds_titlebar .__ds_traffic button {
           width: 12px; height: 12px; border-radius: 50%; border: none; padding: 0;
           cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -438,8 +438,8 @@ function createWindow() {
         #__ds_max   { background: #28c840; }
 
         html, body { height: 100%; }
-        body { padding-top: 44px !important; box-sizing: border-box !important; }
-        #root { min-height: calc(100% - 44px) !important; margin: 0 !important; }
+        body { padding-top: 0 !important; box-sizing: border-box !important; }
+        #root { min-height: 100% !important; margin: 0 !important; }
       `);
       win.webContents.executeJavaScript(`
         (function () {
@@ -453,8 +453,8 @@ function createWindow() {
             + '</span>'
              + '<span class="__ds_drag" aria-hidden="true"></span>';
           document.body.prepend(bar);
-          document.body.style.paddingTop = "44px";
-          document.documentElement.style.setProperty("--dsh-desktop-titlebar-height", "44px");
+          document.body.style.paddingTop = "0";
+          document.documentElement.style.setProperty("--dsh-desktop-titlebar-height", "0px");
           document.getElementById("__ds_close").addEventListener("click", function () { window.dshWin.close(); });
           document.getElementById("__ds_min").addEventListener("click", function () { window.dshWin.minimize(); });
           document.getElementById("__ds_max").addEventListener("click", function () { window.dshWin.toggleMaximize(); });
