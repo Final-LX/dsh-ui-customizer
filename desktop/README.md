@@ -99,7 +99,7 @@ npm start
 
 #### 窗口标题栏
 
-桌面端使用 Electron/Windows 系统原生标题栏（`frame: true`），窗口标题为 `DeepSeek Harness`，并关闭 Electron 默认应用菜单（File、Edit、View、Window、Help）。Windows 使用 Mica 窗口材质，其他系统或不支持时回退到固定深灰蓝 `#20242B`。桌面端不向 Web 页面注入标题栏 DOM 或 CSS，也不修改 `body`、`#root`、滚动模型或 sidebar CSS 变量。
+桌面端使用 Electron/Windows 系统原生标题栏（`frame: true`），窗口标题为 `DeepSeek Harness`，并关闭 Electron 默认应用菜单（File、Edit、View、Window、Help）。标题栏使用稳定的固定深灰蓝 `#20242B`；暂不启用 Electron `backgroundMaterial: "mica"`，避免当前 Electron/Windows GPU 合成路径造成启动白屏。桌面端不向 Web 页面注入标题栏 DOM 或 CSS，也不修改 `body`、`#root`、滚动模型或 sidebar CSS 变量。
 
 - 窗口控制、拖动区域、最大化和系统菜单由 Windows 原生窗口处理；
 - 使用 `assets/icon.ico` 作为窗口和任务栏图标，页面内 DSH logo 保持原样；
