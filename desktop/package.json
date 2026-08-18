@@ -9,7 +9,8 @@
   "scripts": {
     "start": "electron .",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "postinstall": "node scripts/patch-dir-picker.cjs"
   },
   "dependencies": {
     "@deepseek-ai/dsh": "^0.1.0-rc.6",
