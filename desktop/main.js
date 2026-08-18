@@ -39,6 +39,13 @@ function log(line) {
   const text = `[${stamp}] ${line}\n`;
   try {
     fs.mkdirSync(DS_HOME, { recursive: true });
+    try {
+      if (fs.existsSync(LOG_FILE) && fs.statSync(LOG_FILE).size > 5 * 1024 * 1024) {
+        const rotated = LOG_FILE + ".1";
+        try { fs.rmSync(rotated, { force: true }); } catch (e) {}
+        fs.renameSync(LOG_FILE, rotated);
+      }
+    } catch (e) {}
     fs.appendFileSync(LOG_FILE, text, "utf8");
   } catch (e) { /* 落盘失败不阻断 */ }
   if (!app.isPackaged) process.stdout.write(text);
@@ -85,6 +92,9 @@ function resolveDshRunner() {
     if (bin) {
       const node = findInPath("node.exe") || "node";
       return { cmd: node, prefix: [bin], env: process.env, shell: false };
+    }
+    if (app && app.isPackaged) {
+      throw new Error("安装包内置 DSH 运行时缺失，无法在离线模式启动");
     }
     return {
       cmd: "npx",
@@ -267,10 +277,10 @@ function probeExistingDsh() {
   });
 }
 
-function startServer() {
+function startServer(skipProbe) {
   return new Promise(async (resolve, reject) => {
     // 已有 DSH 实例在跑 → 直接复用，不重复起服务
-    if (await probeExistingDsh()) {
+    if (!skipProbe && await probeExistingDsh()) {
       webUrl = `http://127.0.0.1:${PORT}`;
       ownsServer = false;
       log(`检测到已有 DSH 实例 ${webUrl}，直接复用`);
@@ -486,8 +496,13 @@ if (!gotLock) {
     log("==== 启动 ====");
     try {
       createSplash();
-      ensureProfile();
-      await startServer();
+      const existingDsh = await probeExistingDsh();
+      if (existingDsh) {
+        log(`启动前发现已有 DSH 实例 ${PORT}，不修改外部 profile`);
+      } else {
+        ensureProfile();
+      }
+      await startServer(true);
       createWindow();
       closeSplash();
       createTray();

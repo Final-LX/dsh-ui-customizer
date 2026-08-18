@@ -72,6 +72,15 @@ window.__ModuleLoader__.load({
         radius: DEFAULTS.radius
       };
     }
+    function clampConfigNumber(value, min, max, fallback) {
+      return typeof value === "number" && Number.isFinite(value) ? clamp(value, min, max) : fallback;
+    }
+    function allowedConfigValue(value, allowed, fallback) {
+      return allowed.indexOf(value) >= 0 ? value : fallback;
+    }
+    function validHex(value, fallback) {
+      return typeof value === "string" && /^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(value) ? value : fallback;
+    }
     function mergeConfig(saved) {
       var d = freshDefaults();
       if (!saved || typeof saved !== "object") return d;
@@ -79,23 +88,23 @@ window.__ModuleLoader__.load({
       if (typeof saved.preset === "string") d.preset = saved.preset;
       if (saved.palette && typeof saved.palette === "object") {
         ["brand", "accent", "success", "warning", "danger"].forEach(function (k) {
-          if (typeof saved.palette[k] === "string") d.palette[k] = saved.palette[k];
+          if (validHex(saved.palette[k], "")) d.palette[k] = saved.palette[k];
         });
       }
       if (typeof saved.fontFamily === "string") d.fontFamily = saved.fontFamily;
       if (typeof saved.codeFont === "string") d.codeFont = saved.codeFont;
-      if (typeof saved.zoom === "number") d.zoom = saved.zoom;
-      if (typeof saved.fontScale === "number") d.fontScale = saved.fontScale;
-      if (typeof saved.shadowLevel === "string") d.shadowLevel = saved.shadowLevel;
-      if (typeof saved.neutralTone === "string") d.neutralTone = saved.neutralTone;
+      d.zoom = clampConfigNumber(saved.zoom, 80, 140, d.zoom);
+      d.fontScale = clampConfigNumber(saved.fontScale, 80, 130, d.fontScale);
+      d.shadowLevel = allowedConfigValue(saved.shadowLevel, ["none", "light", "standard", "strong"], d.shadowLevel);
+      d.neutralTone = allowedConfigValue(saved.neutralTone, ["blue", "cool", "warm", "graphite"], d.neutralTone);
       if (typeof saved.useBackground === "boolean") d.useBackground = saved.useBackground;
       if (typeof saved.useWallpaper === "boolean") d.useWallpaper = saved.useWallpaper;
       if (typeof saved.backgroundUrl === "string") d.backgroundUrl = saved.backgroundUrl;
-      if (typeof saved.backgroundType === "string") d.backgroundType = saved.backgroundType;
+      d.backgroundType = allowedConfigValue(saved.backgroundType, ["image", "video"], d.backgroundType);
       if (typeof saved.videoUrl === "string") d.videoUrl = saved.videoUrl;
-      if (typeof saved.glassAlpha === "number") d.glassAlpha = saved.glassAlpha;
-      if (typeof saved.blur === "number") d.blur = saved.blur;
-      if (typeof saved.radius === "number") d.radius = saved.radius;
+      d.glassAlpha = clampConfigNumber(saved.glassAlpha, 0, 1, d.glassAlpha);
+      d.blur = clampConfigNumber(saved.blur, 0, 30, d.blur);
+      d.radius = clampConfigNumber(saved.radius, 0, 24, d.radius);
       return d;
     }
     function loadConfig() {
@@ -344,10 +353,19 @@ window.__ModuleLoader__.load({
       return Promise.all(jobs).then(function () { return { cfg: cfg, migrated: migrated }; });
     }
 
+    function safeMediaUrl(value) {
+      if (typeof value !== "string" || !value) return "";
+      var valueTrimmed = value.trim();
+      if (/^(https?:|blob:|data:image\/(?:jpeg|png|gif|webp);)/i.test(valueTrimmed)) return valueTrimmed;
+      return "";
+    }
+    function cssUrl(value) {
+      return String(value || "").replace(/[\\"'\r\n()]/g, function (ch) { return "\\" + ch; });
+    }
     function effectiveBackground(cfg) {
       if (cfg.useBackground === false) return "";
       if (cfg.useWallpaper && WALLPAPER_DATA_URI !== "") return WALLPAPER_DATA_URI;
-      if (cfg.backgroundUrl) return resolvedMediaUrl(cfg.backgroundUrl);
+      if (cfg.backgroundUrl) return safeMediaUrl(resolvedMediaUrl(cfg.backgroundUrl));
       return "";
     }
     function hasVisualBackground(cfg) {
@@ -539,7 +557,7 @@ window.__ModuleLoader__.load({
         // 视频背景：由 <video> 元素渲染，html/body 都透明露出视频，不加毛玻璃（模糊视频开销大）
         parts.push("html,body{background:transparent;}");
       } else if (effectiveBackground(cfg) !== "") {
-        parts.push("html{background-image:url(\"" + effectiveBackground(cfg) + "\");background-size:cover;background-position:center;background-attachment:fixed;}");
+        parts.push("html{background-image:url(\"" + cssUrl(effectiveBackground(cfg)) + "\");background-size:cover;background-position:center;background-attachment:fixed;}");
         parts.push("body{background:transparent;}");
         parts.push("#root>*{-webkit-backdrop-filter:blur(" + blur + "px) saturate(140%);backdrop-filter:blur(" + blur + "px) saturate(140%);}");
       }
@@ -584,12 +602,17 @@ window.__ModuleLoader__.load({
      * ============================================================ */
     var STYLE_TAG_ID = "dsh-ui-customizer/custom.css";
     var styleEl = null;
-    if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(STYLE_TAG_ID) + "]") === null) {
+    function ensureStyleEl() {
+      if (styleEl) return styleEl;
+      if (typeof document === "undefined" || !document.head) return null;
+      var existing = document.querySelector("style[data-plugin-css=" + JSON.stringify(STYLE_TAG_ID) + "]");
+      if (existing) { styleEl = existing; return styleEl; }
       styleEl = document.createElement("style");
       styleEl.dataset.plugin = "dsh-ui-customizer";
       styleEl.dataset.pluginCss = STYLE_TAG_ID;
       styleEl.textContent = "";
       document.head.appendChild(styleEl);
+      return styleEl;
     }
 
     var VIDEO_TAG_ID = "dsh-ui-customizer/video";
@@ -670,7 +693,11 @@ window.__ModuleLoader__.load({
     function switchControl(checked, onChange) {
       return React.createElement("span", {
         "data-switch": "enabled",
+        role: "switch",
+        tabIndex: 0,
+        "aria-checked": checked ? "true" : "false",
         onClick: function () { onChange(!checked); },
+        onKeyDown: function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onChange(!checked); } },
         style: {
           position: "relative", display: "inline-block", width: "40px", height: "22px", borderRadius: "11px", flexShrink: 0,
           background: checked ? "var(--dsw-alias-state-business-primary)" : "var(--dsw-alias-border-l3)",
@@ -760,7 +787,7 @@ window.__ModuleLoader__.load({
         var v = ensureVideoEl();
         if (!v) return;
         var raw = (cfg && cfg.useBackground !== false && cfg.backgroundType === "video") ? (cfg.videoUrl || "") : "";
-        var url = resolvedMediaUrl(raw);
+        var url = safeMediaUrl(resolvedMediaUrl(raw));
         if (url) {
           v.src = url;
           v.style.display = "block";
@@ -773,13 +800,14 @@ window.__ModuleLoader__.load({
         }
       }
       function applyConfig(cfg) {
+        var css = ensureStyleEl();
         if (cfg.enabled === false) {
           if (tokensDisposer) { tokensDisposer(); tokensDisposer = null; }
-          if (styleEl) styleEl.textContent = "";
+          if (css) css.textContent = "";
           applyVideo(null);
           return;
         }
-        if (styleEl) styleEl.textContent = buildCss(cfg);
+        if (css) css.textContent = buildCss(cfg);
         applyTokens(buildTokens(cfg));
         applyVideo(cfg);
       }
@@ -795,7 +823,16 @@ window.__ModuleLoader__.load({
       cleanOrphanMedia();
 
       ctx.effect(function () {
-        return function () { if (tokensDisposer) tokensDisposer(); };
+        return function () {
+          if (tokensDisposer) { tokensDisposer(); tokensDisposer = null; }
+          if (styleEl) styleEl.textContent = "";
+          if (videoEl) {
+            try { videoEl.pause(); } catch (e) {}
+            try { videoEl.removeAttribute("src"); videoEl.load(); } catch (e) {}
+            if (videoEl.parentNode) videoEl.parentNode.removeChild(videoEl);
+            videoEl = null;
+          }
+        };
       }, "dsh-ui-customizer: dispose");
 
       function DiySection(props) {
@@ -911,11 +948,13 @@ window.__ModuleLoader__.load({
             }
           }
         }
-        function commit() { setSt({ draft: draft, applied: draft }); saveConfig(draft); }
+        function commit() {
+          setSt({ draft: draft, applied: draft });
+          saveConfig(draft);
+          cleanOrphanMedia();
+        }
         function revert() { setSt({ draft: applied, applied: applied }); }
         function resetDefaults() {
-          releaseMediaRef(draft.backgroundUrl);
-          releaseMediaRef(draft.videoUrl);
           setSt({ draft: freshDefaults(), applied: applied });
         }
         function handleUpload(e) {
@@ -928,7 +967,6 @@ window.__ModuleLoader__.load({
               var blob = dataUriToBlob(dataUri);
               setMediaCache(id, dataUri);                       // 立即预览
               if (blob) idbPut(id, blob, "image").catch(function () {});
-              releaseMediaRef(draft.backgroundUrl);
               updateDraft({ backgroundUrl: MEDIA_PREFIX + id, useWallpaper: false, backgroundType: "image" });
             } else {
               updateDraft({ backgroundUrl: dataUri, useWallpaper: false, backgroundType: "image" });
@@ -945,7 +983,6 @@ window.__ModuleLoader__.load({
             if (typeof URL !== "undefined" && URL.createObjectURL) { try { url = URL.createObjectURL(file); } catch (err) { url = ""; } }
             setMediaCache(id, url);
             idbPut(id, file, "video").catch(function () {});
-            releaseMediaRef(draft.videoUrl);
             updateDraft({ videoUrl: MEDIA_PREFIX + id, backgroundType: "video" });
           } else {
             var url2 = "";
@@ -959,7 +996,7 @@ window.__ModuleLoader__.load({
           var name = String(schemeName || "").trim();
           if (!name) return;
           var list = loadSchemes().filter(function (s) { return s.name !== name; });
-          list.push({ name: name, config: draft });
+          list.push({ schemaVersion: 1, name: name.slice(0, 80), updatedAt: Date.now(), config: mergeConfig(draft) });
           saveSchemes(list);
           setSchemes(list);
           setName("");
@@ -973,8 +1010,6 @@ window.__ModuleLoader__.load({
           setSchemes(list);
         }
         function clearUploadedMedia() {
-          releaseMediaRef(draft.backgroundUrl);
-          releaseMediaRef(draft.videoUrl);
           updateDraft({ backgroundUrl: "", videoUrl: "", useWallpaper: false, useBackground: true });
         }
 

@@ -170,6 +170,7 @@ assert(byType("range").length === 5, "滑杆数量: " + byType("range").length);
 assert(byType("checkbox").length === 1, "复选框数量: " + byType("checkbox").length);
 assert(byType("select").length === 5, "下拉框数量: " + byType("select").length);
 assert(byType("switch").length === 2, "开关数量: " + byType("switch").length);
+assert(byType("switch").every((p) => p.role === "switch" && p.tabIndex === 0 && p["aria-checked"]), "开关缺少可访问性属性");
 assert(byType("file").length === 1, "文件输入数量: " + byType("file").length);
 assert(btn("应用") && btn("还原") && btn("重置为默认") && btn("保存方案"), "缺操作按钮");
 assert(!localStorageStore["dsh-ui-customizer:config:v3"], "初始不应自动持久化");
