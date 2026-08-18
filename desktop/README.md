@@ -97,13 +97,15 @@ npm start
 
 好处：网页端和桌面端是同一个 DSH 进程，**会话实时同步**；也不会两个进程并发写同一份会话日志导致 `corrupt Zstandard session log`。
 
-#### 窗口标题栏（红绿灯）
+#### 窗口标题栏
 
-窗口 `frame: false`（无系统标题栏），`dom-ready` 时注入一条 36px 标题栏：
+桌面端使用 Electron/Windows 系统原生标题栏（`frame: true`），不向 Web 页面注入标题栏 DOM 或 CSS，也不修改 `body`、`#root`、滚动模型或 sidebar CSS 变量。
 
-- 左上角红绿灯：红 `#ff5f57`（关闭）、黄 `#febc2e`（最小化）、绿 `#28c840`（最大化），12px 圆点，悬停显示 `× / − / +`。
-- 背景 `var(--dsw-alias-bg-base)`、底边 `var(--dsw-alias-border-l1)`——**跟随 DIY 主题**自动变色。
-- 内容区 `padding-top: 36px + overflow: hidden` 让位，侧边栏全高显示、无滚动条。
+- 窗口控制、拖动区域、最大化和系统菜单由 Windows 原生窗口处理；
+- 使用 `assets/icon.ico` 作为窗口和任务栏图标，页面内 DSH logo 保持原样；
+- DIY 主题只作用于 Web 页面，网页和插件的布局、按钮命中区域、透明度由 Web 自己管理；
+- `dsh-better-sidebar` 展开时继续由其 `--dsh-sidebar-width` 和 `#root` 布局逻辑推动主对话区域，不受桌面壳干预；
+- 这是为了保证 Web 插件行为与浏览器中一致；当前 Windows 版本不再绘制左侧 macOS 红绿灯。
 
 #### 托盘
 

@@ -402,7 +402,7 @@ function createWindow() {
     backgroundColor: "#111318",
     title: "DSH",
     icon: ICON_PATH,                    // 任务栏/Alt-Tab 窗口图标
-    frame: false,                       // macOS 风格：自绘红绿灯，无系统标题栏
+    frame: true,                        // 系统原生标题栏：不覆盖 Web 页面和插件布局
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -412,14 +412,16 @@ function createWindow() {
     }
   });
   win.loadURL(webUrl);
-  // 顶部一条 36px 标题栏，左上角 macOS 红绿灯（关闭/最小化/最大化），背景/边框跟随主题，无多余文字
+  // 系统原生标题栏模式：不向 Web 页面注入 DOM/CSS。
   win.webContents.on("dom-ready", () => {
-    try {
-      win.webContents.insertCSS(`
+    /* Web 原生布局由页面和插件自己管理。 */
+    return;
+  });
+  /*
         #__ds_titlebar {
           position: fixed; top: 0; left: 0; right: 0; height: 44px; z-index: 2147483647;
           display: flex; align-items: center;
-          background: var(--dsw-alias-bg-base, #111318);
+          background: linear-gradient(to right, var(--dsw-alias-bg-base, #111318) 0 calc(100% - 140px), transparent calc(100% - 140px));
            pointer-events: none;
           border-bottom: 1px solid var(--dsw-alias-border-l1, rgba(255,255,255,.06));
           -webkit-app-region: drag;
@@ -462,6 +464,7 @@ function createWindow() {
       `).catch(() => {});
     } catch (e) {}
   });
+  */
   win.on("close", (e) => {
     if (!quitting && tray) {   // 关窗 = 最小化到托盘
       e.preventDefault();
