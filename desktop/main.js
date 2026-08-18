@@ -17,6 +17,9 @@ app.disableHardwareAcceleration();
 
 // ---------- 配置 ----------
 const PROFILE = process.env.DSH_PROFILE || "web";   // 复用 web profile（含 web-app 模板）
+const WINDOW_FALLBACK_COLOR = "#20242B";
+// Windows 11 使用系统 Mica 材质；其他系统/旧版 Windows 使用稳定的深灰蓝回退色。
+const WINDOW_BACKGROUND_MATERIAL = process.platform === "win32" ? "mica" : undefined;
 // 端口用 3080（与官方 `dsh web` 一致）：桌面端和网页端共用同一个 DSH 实例，
 // 会话实时同步、也不会两个进程并发写同一份会话日志导致 Zstandard 记录撕裂。
 const PORT = process.env.DSH_PORT || "3080";
@@ -402,7 +405,8 @@ function createWindow() {
     height: 840,
     minWidth: 960,
     minHeight: 640,
-    backgroundColor: "#111318",
+    backgroundColor: WINDOW_FALLBACK_COLOR,
+    backgroundMaterial: WINDOW_BACKGROUND_MATERIAL,
     title: "DeepSeek Harness",
     icon: ICON_PATH,                    // 任务栏/Alt-Tab 窗口图标
     frame: true,                        // 系统原生标题栏：不覆盖 Web 页面和插件布局
