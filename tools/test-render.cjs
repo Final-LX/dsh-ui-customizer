@@ -1,21 +1,27 @@
-// 真实 React 渲染测试：用 dsh 自带的 react + react-dom/server 渲染分区与设置行组件，
+// 真实 React 渲染测试：用 react + react-dom/server 渲染分区与设置行组件，
 // 确认组件在真实 React 环境下能正常执行（非 mock）。node tools/test-render.cjs
 const fs = require("node:fs");
 const vm = require("node:vm");
 const path = require("node:path");
 const { createRequire } = require("node:module");
 
-// 动态解析 @deepseek-ai/dsh 的位置：CI 上 `pnpm add -D @deepseek-ai/dsh` 会装进 node_modules；
-// 本地开发则回退到 npx 缓存路径。
-let dshPkgJson;
+// 优先直接 require 仓库 devDependencies 里的 react/react-dom（CI 会装）；
+// 找不到时回退到从 @deepseek-ai/dsh 的依赖树转解析（本地 npx 缓存场景）。
+let React, ReactDOMServer;
 try {
-  dshPkgJson = require.resolve("@deepseek-ai/dsh/package.json");
+  React = require("react");
+  ReactDOMServer = require("react-dom/server");
 } catch (e) {
-  dshPkgJson = "C:/Users/Administrator/AppData/Local/npm-cache/_npx/1e7f6d9597241db0/node_modules/@deepseek-ai/dsh/package.json";
+  let dshPkgJson;
+  try {
+    dshPkgJson = require.resolve("@deepseek-ai/dsh/package.json");
+  } catch (e2) {
+    dshPkgJson = "C:/Users/Administrator/AppData/Local/npm-cache/_npx/1e7f6d9597241db0/node_modules/@deepseek-ai/dsh/package.json";
+  }
+  const req = createRequire(dshPkgJson);
+  React = req("react");
+  ReactDOMServer = req("react-dom/server");
 }
-const req = createRequire(dshPkgJson);
-const React = req("react");
-const ReactDOMServer = req("react-dom/server");
 
 const CLIENT = process.argv[2] || path.join(__dirname, "..", "lib", "client.js");
 const src = fs.readFileSync(CLIENT, "utf8");
