@@ -14,6 +14,18 @@
   在「設定 → DIY 主題」裡調整配色、字型、背景與元件樣式，改完立即可見。
 </p>
 
+<p align="center">
+  <img src="show01.png" alt="DSH 首頁 —— 主題效果" width="860"/>
+</p>
+
+<p align="center">
+  <img src="show02.png" alt="DIY 主題設定面板" width="860"/>
+</p>
+
+<p align="center">
+  <video src="videos.mp4" controls width="860" poster="show01.png"></video>
+</p>
+
 ---
 
 **語言：** [English](README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja.md)

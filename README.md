@@ -15,6 +15,18 @@
   Change colors, fonts, background and component style from the <em>Settings → DIY Theme</em> panel and watch it apply instantly.
 </p>
 
+<p align="center">
+  <img src="show01.png" alt="DSH home — themed" width="860"/>
+</p>
+
+<p align="center">
+  <img src="show02.png" alt="DIY Theme settings panel" width="860"/>
+</p>
+
+<p align="center">
+  <video src="videos.mp4" controls width="860" poster="show01.png"></video>
+</p>
+
 ---
 
 **Languages:** [English](README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja.md)

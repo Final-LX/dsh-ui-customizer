@@ -14,6 +14,18 @@
   「設定 → DIY テーマ」で配色・フォント・背景・コンポーネントのスタイルを調整でき、変更は即座に反映されます。
 </p>
 
+<p align="center">
+  <img src="show01.png" alt="DSH ホーム —— テーマ適用後" width="860"/>
+</p>
+
+<p align="center">
+  <img src="show02.png" alt="DIY テーマ設定パネル" width="860"/>
+</p>
+
+<p align="center">
+  <video src="videos.mp4" controls width="860" poster="show01.png"></video>
+</p>
+
 ---
 
 **言語：** [English](README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja.md)
