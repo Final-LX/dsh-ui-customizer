@@ -1,9 +1,15 @@
-﻿# install-web.ps1 — 网页端一键安装 dsh-ui-customizer（只需 Node.js，无需 git / pnpm）
+# install-web.ps1 — 网页端一键安装 dsh-ui-customizer（只需 Node.js，无需 git / pnpm）
 #
 # 把插件手动复制进 web profile，再登记 loader，全程不依赖 git 和 pnpm。
 #
 # 用法：在本仓库目录里运行  .\install-web.ps1
 # 前置：只需 Node.js（含 npx）。装完后运行  npx @deepseek-ai/dsh web
+#
+# 若提示“无法加载……未进行数字签名 / 无法执行脚本”，是 PowerShell 执行策略拦截，
+# 只需先放宽当前窗口的策略再跑（只影响当前窗口，关掉即恢复，安全）：
+#   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+# 或一行直接跑：
+#   powershell -ExecutionPolicy Bypass -File .\install-web.ps1
 $ErrorActionPreference = "Stop"
 
 $pluginDir = Split-Path -Parent $MyInvocation.MyCommand.Path

@@ -60,6 +60,16 @@
 
 脚本会把插件复制到 `~\.dsh\profiles\web\node_modules\dsh-ui-customizer`，并在 `cordis.patch.yml` 中登记 loader。脚本可重复运行。
 
+> **提示“无法加载……未进行数字签名 / 无法执行脚本”？** 这是 PowerShell 默认执行策略拦截了未签名脚本。只需放宽当前窗口的策略再跑（只影响当前窗口，关掉即恢复，安全）：
+> ```powershell
+> Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+> .\install-web.ps1
+> ```
+> 或一行直接跑：
+> ```powershell
+> powershell -ExecutionPolicy Bypass -File .\install-web.ps1
+> ```
+
 ### 方案 B：DSH 插件命令（已装 git 和 pnpm）
 
 ```powershell

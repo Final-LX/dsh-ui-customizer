@@ -60,6 +60,16 @@
 
 腳本會把外掛複製到 `~\.dsh\profiles\web\node_modules\dsh-ui-customizer`，並在 `cordis.patch.yml` 中登記 loader。腳本可重複執行。
 
+> **提示「無法載入……未進行數位簽章 / 無法執行指令碼」？** 這是 PowerShell 預設執行原則攔截了未簽章腳本。只需放寬目前視窗的原則再跑（只影響目前視窗，關掉即恢復，安全）：
+> ```powershell
+> Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+> .\install-web.ps1
+> ```
+> 或一行直接跑：
+> ```powershell
+> powershell -ExecutionPolicy Bypass -File .\install-web.ps1
+> ```
+
 ### 方案 B：DSH 外掛命令（已安裝 git 和 pnpm）
 
 ```powershell

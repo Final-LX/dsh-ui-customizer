@@ -61,6 +61,16 @@
 
 The script copies the plugin into `~\.dsh\profiles\web\node_modules\dsh-ui-customizer` and registers it in `cordis.patch.yml`. It is safe to re‑run.
 
+> **Execution policy error?** If PowerShell says the script "cannot be loaded / is not digitally signed", that is the default execution policy blocking an unsigned script. Bypass it for just this window (safe, resets when the window closes):
+> ```powershell
+> Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+> .\install-web.ps1
+> ```
+> or run it in one line:
+> ```powershell
+> powershell -ExecutionPolicy Bypass -File .\install-web.ps1
+> ```
+
 ### Option B — DSH plugin command (git + pnpm available)
 
 ```powershell

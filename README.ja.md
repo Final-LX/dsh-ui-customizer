@@ -60,6 +60,16 @@
 
 このスクリプトはプラグインを `~\.dsh\profiles\web\node_modules\dsh-ui-customizer` へコピーし、`cordis.patch.yml` に loader を登録します。再実行しても安全です。
 
+> **「読み込めません……デジタル署名されていません / スクリプトを実行できません」と表示される？** これは PowerShell の既定の実行ポリシーが未署名スクリプトをブロックしているためです。このウィンドウ限定でポリシーを緩めてから実行してください（このウィンドウのみ有効、閉じれば元に戻り、安全です）：
+> ```powershell
+> Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+> .\install-web.ps1
+> ```
+> または 1 行で実行：
+> ```powershell
+> powershell -ExecutionPolicy Bypass -File .\install-web.ps1
+> ```
+
 ### 方法 B：DSH プラグインコマンド（git・pnpm がある場合）
 
 ```powershell
