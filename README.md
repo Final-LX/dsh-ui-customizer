@@ -92,6 +92,47 @@ Make sure it contains:
 Then **fully restart** DSH Web (`npx @deepseek-ai/dsh web`) and refresh the page.
 If you only run `dsh plugin add` without the loader row, the panel will not show up.
 
+## 🤖 Install via AI (copy & paste)
+
+Prefer to let an AI agent (e.g. DeepSeek Harness, Claude, ChatGPT) set it up for you?
+Copy one of the prompts below and paste it to your AI. Both are self-contained.
+
+**English prompt:**
+
+```text
+Help me install the dsh-ui-customizer theme plugin into my DeepSeek Harness (DSH) Web.
+Steps:
+1. Make sure I have Node.js (with npx).
+2. Start DSH Web with: npx @deepseek-ai/dsh web  (this initializes the "web" profile on first run).
+3. Install the plugin from git:  npx @deepseek-ai/dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
+4. This plugin is a classic bundle (no dsh.bundle), so dsh plugin add will NOT activate it on its own.
+   Open %USERPROFILE%\.dsh\profiles\web\cordis.patch.yml and make sure it contains:
+     - insert:
+         - id: ui-customizer
+           name: dsh-ui-customizer
+5. Fully restart DSH Web (stop and run "npx @deepseek-ai/dsh web" again), then refresh the browser.
+6. Open Settings -> DIY Theme to confirm the panel appears.
+If anything fails, show me the error and the contents of cordis.patch.yml, and tell me how to fix it.
+```
+
+**中文提示词：**
+
+```text
+帮我把 dsh-ui-customizer 主题插件安装到 DeepSeek Harness（DSH）Web 里。
+步骤：
+1. 确认本机已装 Node.js（含 npx）。
+2. 启动 DSH Web：npx @deepseek-ai/dsh web（首次运行会初始化 web profile）。
+3. 从 git 安装插件：npx @deepseek-ai/dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
+4. 本插件是 classic bundle（没有 dsh.bundle），dsh plugin add 不会自动激活它。
+   打开 %USERPROFILE%\.dsh\profiles\web\cordis.patch.yml，确认包含：
+     - insert:
+         - id: ui-customizer
+           name: dsh-ui-customizer
+5. 完全重启 DSH Web（先停掉，再跑 npx @deepseek-ai/dsh web），然后刷新浏览器。
+6. 打开「设置 -> DIY 主题」确认面板出现。
+如果失败，把报错和 cordis.patch.yml 的内容给我看，并告诉我怎么修。
+```
+
 ## 🖼️ First run & how the panel works
 
 1. Start DSH and finish the built‑in model / API‑key onboarding.

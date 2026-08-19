@@ -89,6 +89,46 @@ npx @deepseek-ai/dsh plugin --profile web add "git+https://github.com/Final-LX/d
 然后**完全退出并重启** DSH Web（`npx @deepseek-ai/dsh web`），再刷新页面。
 如果只跑了 `dsh plugin add` 没加 loader 行，面板不会出现。
 
+## 🤖 让 AI 帮你安装（复制粘贴）
+
+想让 AI 代理（如 DeepSeek Harness、Claude、ChatGPT）替你装好？复制下面任意一段提示词发给你的 AI 即可，两段都自包含。
+
+**中文提示词：**
+
+```text
+帮我把 dsh-ui-customizer 主题插件安装到 DeepSeek Harness（DSH）Web 里。
+步骤：
+1. 确认本机已装 Node.js（含 npx）。
+2. 启动 DSH Web：npx @deepseek-ai/dsh web（首次运行会初始化 web profile）。
+3. 从 git 安装插件：npx @deepseek-ai/dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
+4. 本插件是 classic bundle（没有 dsh.bundle），dsh plugin add 不会自动激活它。
+   打开 %USERPROFILE%\.dsh\profiles\web\cordis.patch.yml，确认包含：
+     - insert:
+         - id: ui-customizer
+           name: dsh-ui-customizer
+5. 完全重启 DSH Web（先停掉，再跑 npx @deepseek-ai/dsh web），然后刷新浏览器。
+6. 打开「设置 -> DIY 主题」确认面板出现。
+如果失败，把报错和 cordis.patch.yml 的内容给我看，并告诉我怎么修。
+```
+
+**English prompt:**
+
+```text
+Help me install the dsh-ui-customizer theme plugin into my DeepSeek Harness (DSH) Web.
+Steps:
+1. Make sure I have Node.js (with npx).
+2. Start DSH Web with: npx @deepseek-ai/dsh web  (this initializes the "web" profile on first run).
+3. Install the plugin from git:  npx @deepseek-ai/dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
+4. This plugin is a classic bundle (no dsh.bundle), so dsh plugin add will NOT activate it on its own.
+   Open %USERPROFILE%\.dsh\profiles\web\cordis.patch.yml and make sure it contains:
+     - insert:
+         - id: ui-customizer
+           name: dsh-ui-customizer
+5. Fully restart DSH Web (stop and run "npx @deepseek-ai/dsh web" again), then refresh the browser.
+6. Open Settings -> DIY Theme to confirm the panel appears.
+If anything fails, show me the error and the contents of cordis.patch.yml, and tell me how to fix it.
+```
+
 ## 🖼️ 首次使用与面板操作
 
 1. 启动 DSH，完成内置的模型 / API key 引导。
