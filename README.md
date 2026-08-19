@@ -24,7 +24,7 @@
 </p>
 
 <p align="center">
-  <video src="https://blog.lonelybear.cn/content/media/2026/08/videos-1.mp4" controls width="860" poster="show01.png"></video>
+  <video src="https://blog.lonelybear.cn/content/media/2026/08/videos-1.mp4" controls width="860" poster="https://blog.lonelybear.cn/content/images/2026/08/show01.png"></video>
 </p>
 
 ---
