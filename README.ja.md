@@ -72,7 +72,7 @@ dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
 npx @deepseek-ai/dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
 ```
 
-profile が loader を自動登録しない場合は、次を編集：
+`dsh plugin add` は依存関係のインストールのみを行います — このプラグインは classic bundle（`dsh.bundle` ではなく loader 行で有効化）のため、有効にするには**手動で loader を登録する必要があります**。次を編集：
 
 ```text
 %USERPROFILE%\.dsh\profiles\web\cordis.patch.yml
@@ -86,7 +86,8 @@ profile が loader を自動登録しない場合は、次を編集：
       name: dsh-ui-customizer
 ```
 
-その後、DSH Web を**完全に再起動**し、ページを再読み込みします。
+その後、DSH Web を**完全に再起動**（`npx @deepseek-ai/dsh web`）し、ページを再読み込みします。
+`dsh plugin add` だけ実行して loader 行を追加しないと、パネルは表示されません。
 
 ## 🖼️ 初回利用とパネルの操作
 

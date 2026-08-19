@@ -72,7 +72,7 @@ dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
 npx @deepseek-ai/dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
 ```
 
-如果你的 profile 沒有自動登記 loader，請開啟：
+`dsh plugin add` 只裝依賴——此外掛是 classic bundle（靠 loader 行啟用，不是 `dsh.bundle`），所以**必須**手動登記 loader 才會生效。開啟：
 
 ```text
 %USERPROFILE%\.dsh\profiles\web\cordis.patch.yml
@@ -86,7 +86,8 @@ npx @deepseek-ai/dsh plugin --profile web add "git+https://github.com/Final-LX/d
       name: dsh-ui-customizer
 ```
 
-然後**完全退出並重新啟動** DSH Web，再重新整理頁面。
+然後**完全退出並重新啟動** DSH Web（`npx @deepseek-ai/dsh web`），再重新整理頁面。
+如果只跑了 `dsh plugin add` 沒加 loader 行，面板不會出現。
 
 ## 🖼️ 首次使用與面板操作
 

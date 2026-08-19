@@ -73,13 +73,15 @@ If `dsh` is not on your PATH:
 npx @deepseek-ai/dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
 ```
 
-If your profile does not register the loader automatically, edit:
+`dsh plugin add` only installs the dependency — this plugin is a classic bundle
+(activated via a loader row, not `dsh.bundle`), so you **must** register the loader
+manually for it to appear. Edit:
 
 ```text
 %USERPROFILE%\.dsh\profiles\web\cordis.patch.yml
 ```
 
-and make sure it contains:
+Make sure it contains:
 
 ```yaml
 - insert:
@@ -87,7 +89,8 @@ and make sure it contains:
       name: dsh-ui-customizer
 ```
 
-Then **fully restart** DSH Web and refresh the page.
+Then **fully restart** DSH Web (`npx @deepseek-ai/dsh web`) and refresh the page.
+If you only run `dsh plugin add` without the loader row, the panel will not show up.
 
 ## 🖼️ First run & how the panel works
 
