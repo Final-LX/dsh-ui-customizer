@@ -13,12 +13,11 @@
   },
   "files": [
     "lib",
-    "assets",
-    "README.md"
+    "README.*",
+    "LICENSE"
   ],
   "scripts": {
-    "test": "node tools/test-client.cjs && node tools/test-render.cjs && node tools/test-idb.cjs",
-    "wallpaper": "node tools/set-wallpaper.cjs"
+    "test": "node tools/test-client.cjs && node tools/test-render.cjs && node tools/test-idb.cjs && node tools/test-tokens.cjs"
   },
   "dsh": {
     "client": {

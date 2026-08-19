@@ -130,11 +130,15 @@ assert(itemReg && itemReg.options.id === "diy-customizer", "条目注册不正�
 
 assert(overrideCalls.length === 1 && overrideCalls[0].source === "dsh-ui-customizer", "初始 token 未应用");
 const tokenNames = Object.keys(overrideCalls[0].tokens);
-assert(tokenNames.length >= 24, "token 数量过少: " + tokenNames.length);
+// buildTokens 现在只输出白名单（KNOWN_TOKENS）内的合法 token
+assert(tokenNames.length >= 8, "token 数量过少: " + tokenNames.length);
+assert(tokenNames.indexOf("--dsw-alias-brand-primary") !== -1, "应覆盖品牌令牌");
+assert(tokenNames.indexOf("--dsw-alias-state-business-primary") === -1, "越界令牌不应写入 overrideTokens");
 
 const style = injectedStyles[0];
 assert(style && style.dataset.plugin === "dsh-ui-customizer", "style 未注入");
-assert(style.textContent.includes("background-image:url("), "缺背景图");
+// 内嵌壁纸已移除，默认不应有 background-image，直到设置了背景 URL / 上传
+assert(!style.textContent.includes("background-image:url("), "默认不应有背景图（内置壁纸已移除）");
 assert(style.textContent.includes("border-radius:10px"), "缺圆角");
 assert(style.textContent.includes("data-diy-range"), "缺自定义滑块样式");
 assert(style.textContent.includes("-webkit-slider-thumb"), "缺滑块拇指样式");
@@ -167,7 +171,7 @@ renderAndCollect();
 assert(byType("text").length === 2, "文本输入数量: " + byType("text").length);
 assert(byType("color").length === 5, "颜色输入数量: " + byType("color").length);
 assert(byType("range").length === 5, "滑杆数量: " + byType("range").length);
-assert(byType("checkbox").length === 1, "复选框数量: " + byType("checkbox").length);
+assert(byType("checkbox").length === 0, "内置壁纸已移除，应无复选框: " + byType("checkbox").length);
 assert(byType("select").length === 5, "下拉框数量: " + byType("select").length);
 assert(byType("switch").length === 2, "开关数量: " + byType("switch").length);
 assert(byType("switch").every((p) => p.role === "switch" && p.tabIndex === 0 && p["aria-checked"]), "开关缺少可访问性属性");
@@ -191,21 +195,21 @@ btn("应用").props.onClick();
 renderAndCollect();
 assert(saved().palette.brand === "#111111", "应用后品牌色应持久化");
 
-// ---- 试穿：改强调色 → 生效但未持久化 ----
+// ---- 试穿：改强调色 → 生效但未持久化（强调色走 CSS :root 兜底）----
 byType("color")[1].onChange({ target: { value: "#ff0000" } });
 renderAndCollect();
-assert(lastTokens()["--dsw-alias-state-business-primary"].light === "#ff0000", "改强调色未试穿生效");
+assert(style.textContent.includes("--dsw-alias-state-business-primary:#ff0000"), "改强调色未试穿生效");
 
 // ---- 还原 → 回滚到已应用 ----
 btn("还原").props.onClick();
 renderAndCollect();
-assert(lastTokens()["--dsw-alias-state-business-primary"].light !== "#ff0000", "还原后强调色应回滚");
+assert(style.textContent.includes("--dsw-alias-state-business-primary:#8b5cf6"), "还原后强调色应回滚到已应用值");
 assert(lastTokens()["--dsw-alias-brand-primary"].light === "#111111", "还原后品牌色应保持已应用值");
 
 // ---- 皮肤：选深海 → 试穿 ----
 skinBtn("ocean").props.onClick();
 renderAndCollect();
-assert(lastTokens()["--dsw-alias-state-business-primary"].light === "#14b8a6", "选皮肤未试穿");
+assert(style.textContent.includes("--dsw-alias-state-business-primary:#14b8a6"), "选皮肤未试穿");
 assert(saved().palette.brand === "#111111", "试穿皮肤不应覆盖已应用配置");
 
 // ---- 应用皮肤 ----
@@ -221,13 +225,13 @@ btn("应用").props.onClick();
 renderAndCollect();
 assert(saved().fontFamily === "'Noto Sans SC', sans-serif", "应用后字体未持久化");
 
-// ---- 关壁纸 → 试穿 + 应用 ----
-byType("checkbox")[0].onChange({ target: { checked: false } });
+// ---- 背景 URL → 试穿 + 应用（内置壁纸移除后，背景走 URL 路径）----
+byType("text")[0].onChange({ target: { value: "https://example.com/bg.jpg" } });
 renderAndCollect();
-assert(style.textContent.indexOf("background-image") === -1, "关壁纸后仍有背景图");
+assert(style.textContent.includes("background-image:url(\"https://example.com/bg.jpg\")"), "背景 URL 未生效");
 btn("应用").props.onClick();
 renderAndCollect();
-assert(saved().useWallpaper === false, "应用后未持久化壁纸开关");
+assert(saved().backgroundUrl === "https://example.com/bg.jpg", "应用后背景 URL 未持久化");
 
 // ---- 圆角 → 试穿 + 应用 ----
 byType("range")[4].onChange({ target: { value: 16 } });
@@ -259,23 +263,22 @@ renderAndCollect();
 assert(style.textContent !== "", "重新启用后应恢复 CSS");
 assert(overrideCalls.length > overrideCountBefore, "重新启用后应重新应用 token");
 
-// ---- 字号缩放 → 覆盖字体 token ----
+// ---- 字号缩放 → CSS 兜底（#root font-size）----
 byType("range")[1].onChange({ target: { value: 120 } });
 renderAndCollect();
-assert(lastTokens()["--dsw-font-base-16-font-size"].light === "19.2px", "字号缩放未应用");
-assert(lastTokens()["--dsw-font-markdown-h1-font-size"].light === "28.8px", "标题字号未按比例缩放");
+assert(style.textContent.includes("#root{font-size:120%;}"), "字号缩放未应用 CSS 兜底");
 
-// ---- 阴影层级 → 覆盖阴影 token ----
+// ---- 阴影层级 → CSS :root 兜底 ----
 byType("select")[4].onChange({ target: { value: "strong" } });
 renderAndCollect();
-assert(lastTokens()["--dsw-shadow-lv3"].light.indexOf("48px") !== -1, "阴影层级未应用");
+assert(style.textContent.includes("--dsw-alias-shadow-lv3:0 4px 8px 0 rgba(0,0,0,.10)"), "阴影层级未应用 CSS 兜底");
 
-// ---- 中性色调 → 覆盖文字/边框/代码块 token ----
+// ---- 中性色调 → 覆盖文字/边框 token ----
 byType("select")[0].onChange({ target: { value: "graphite" } });
 renderAndCollect();
 assert(lastTokens()["--dsw-alias-label-primary"].light === "#0d0f12", "中性色调未应用到主文字");
 assert(lastTokens()["--dsw-alias-border-l2"].dark === "#2b2e33", "中性色调未应用到边框");
-assert(lastTokens()["--dsw-alias-markdown-code-block"].light === "#eceff2", "中性色调未应用到代码块");
+assert(lastTokens()["--dsw-alias-markdown-code-block"] === undefined, "已移除的 markdown token 不应写入覆盖层");
 
 // ---- 视频背景：切到视频类型 → 上传 mp4 → 视频元素生效 ----
 byType("select")[3].onChange({ target: { value: "video" } });
