@@ -16,15 +16,15 @@
 </p>
 
 <p align="center">
-  <img src="show01.png" alt="DSH home — themed" width="860"/>
+  <img src="[show01.png](https://blog.lonelybear.cn/content/images/2026/08/show01.png)" alt="DSH home — themed" width="860"/>
 </p>
 
 <p align="center">
-  <img src="show02.png" alt="DIY Theme settings panel" width="860"/>
+  <img src="[show02.png](https://blog.lonelybear.cn/content/images/2026/08/show02.png)" alt="DIY Theme settings panel" width="860"/>
 </p>
 
 <p align="center">
-  <video src="videos.mp4" controls width="860" poster="show01.png"></video>
+  <video src="[videos.mp4](https://blog.lonelybear.cn/content/media/2026/08/videos-1.mp4)" controls width="860" poster="show01.png"></video>
 </p>
 
 ---
