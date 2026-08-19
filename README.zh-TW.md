@@ -24,7 +24,7 @@
 
 <p align="center">
   <a href="https://blog.lonelybear.cn/content/media/2026/08/videos-1.mp4" target="_blank" rel="noopener" title="點擊播放示範影片">
-    <img src="show01.png" alt="示範影片 —— 點擊播放" width="860" style="border:1px solid #dfe3e8;border-radius:12px"/>
+    <img src="show03.png" alt="示範影片 —— 點擊播放" width="860" style="border:1px solid #dfe3e8;border-radius:12px"/>
   </a>
 </p>
 

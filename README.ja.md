@@ -24,7 +24,7 @@
 
 <p align="center">
   <a href="https://blog.lonelybear.cn/content/media/2026/08/videos-1.mp4" target="_blank" rel="noopener" title="デモ動画を再生">
-    <img src="show01.png" alt="デモ動画 —— クリックして再生" width="860" style="border:1px solid #dfe3e8;border-radius:12px"/>
+    <img src="show03.png" alt="デモ動画 —— クリックして再生" width="860" style="border:1px solid #dfe3e8;border-radius:12px"/>
   </a>
 </p>
 
