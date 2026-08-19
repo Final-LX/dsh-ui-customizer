@@ -8,6 +8,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "test": "node scripts/test-picker-patch.cjs",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
     "postinstall": "node scripts/patch-dir-picker.cjs"

@@ -24,6 +24,9 @@ const WINDOW_FALLBACK_COLOR = "#20242B";
 // 会话实时同步、也不会两个进程并发写同一份会话日志导致 Zstandard 记录撕裂。
 const PORT = process.env.DSH_PORT || "3080";
 const START_TIMEOUT_MS = 60000;
+const MAX_STDOUT_BUF = 256 * 1024;   // 启动期 stdout 匹配缓冲上限（字节）
+const MAX_STDERR_BUF = 64 * 1024;    // 启动期 stderr 诊断缓冲上限（字节）
+const MAX_RESTARTS = 3;              // 运行期服务崩溃后的重启次数上限，防止无限弹窗递归
 const WEB_UI_PKG = "@linxin666/dsh-web-ui-all";     // 可选：全家桶（env DSH_WEB_UI=1 时安装）
 const DS_HOME = process.env.DSH_HOME || path.join(os.homedir(), ".dsh");
 const LOG_FILE = path.join(DS_HOME, "desktop.log");
@@ -36,6 +39,7 @@ let splash = null;
 let webUrl = null;
 let ownsServer = false;   // 是否由本应用自己 spawn 的 DSH（复用的实例退出时不杀）
 let quitting = false;   // 区分“用户退出”与“服务意外崩溃”
+let restartCount = 0;   // 运行期服务崩溃后的重启计数，防止无限递归弹窗
 
 // ---------- 日志 ----------
 function log(line) {
@@ -313,23 +317,27 @@ function startServer(existingDsh) {
     const timer = setTimeout(() => {
       if (settled) return;
       settled = true;
+      // 启动超时必须回收自己 spawn 的子进程，否则会泄漏一个永远占着端口的 DSH。
+      if (serverChild) { try { serverChild.kill(); } catch (e) {} }
       reject(new Error("DSH 启动超时（60s）。stderr：" + (errBuf.slice(0, 500) || "（空）") + "\n日志：" + LOG_FILE));
     }, START_TIMEOUT_MS);
 
     const onData = (chunk) => {
-      buf += chunk.toString();
+      // 有界缓冲：只保留最新尾部，避免异常输出把内存撑爆。
+      buf = (buf + chunk.toString()).slice(-MAX_STDOUT_BUF);
       const m = /dsh web:\s*(https?:\/\/127\.0\.0\.1:\d+)/.exec(buf);
       if (m && !settled) {
         settled = true;
         clearTimeout(timer);
         gotUrl = true;
+        restartCount = 0;   // 服务成功就绪后重置重启计数
         webUrl = m[1];
         resolve(webUrl);
       }
     };
 
     serverChild.stdout.on("data", (chunk) => { log(chunk.toString().trimEnd()); onData(chunk); });
-    serverChild.stderr.on("data", (chunk) => { errBuf += chunk.toString(); log("[stderr] " + chunk.toString().trimEnd()); onData(chunk); });
+    serverChild.stderr.on("data", (chunk) => { errBuf = (errBuf + chunk.toString()).slice(-MAX_STDERR_BUF); log("[stderr] " + chunk.toString().trimEnd()); onData(chunk); });
 
     serverChild.on("error", (err) => { if (!settled) { settled = true; clearTimeout(timer); reject(err); } });
 
@@ -358,8 +366,14 @@ function startServer(existingDsh) {
         reject(new Error("DSH 进程提前退出（code=" + code + "）。stderr：" + (errBuf.slice(0, 800) || "（空）") + "\n日志：" + LOG_FILE));
       }
       serverChild = null;
-      // 运行期间（已就绪后）崩溃 → 弹窗让用户选重启/退出
+      // 运行期间（已就绪后）崩溃 → 弹窗让用户选重启/退出（有界重启，防无限递归）
       if (gotUrl && !quitting && win && !win.isDestroyed()) {
+        if (restartCount >= MAX_RESTARTS) {
+          dialog.showErrorBox("DSH 服务已停止", "DSH 服务多次意外退出（已达重启上限），请查看日志后手动排查。\n\n日志：" + LOG_FILE);
+          app.quit();
+          return;
+        }
+        restartCount++;
         const choice = dialog.showMessageBoxSync(win, {
           type: "error",
           buttons: ["重启服务", "退出"],
@@ -429,54 +443,6 @@ function createWindow() {
     /* Web 原生布局由页面和插件自己管理。 */
     return;
   });
-  /*
-        #__ds_titlebar {
-          position: fixed; top: 0; left: 0; right: 0; height: 44px; z-index: 2147483647;
-          display: flex; align-items: center;
-          background: linear-gradient(to right, var(--dsw-alias-bg-base, #111318) 0 calc(100% - 140px), transparent calc(100% - 140px));
-           pointer-events: none;
-          border-bottom: 1px solid var(--dsw-alias-border-l1, rgba(255,255,255,.06));
-          -webkit-app-region: drag;
-          padding: 0 16px; box-sizing: border-box;
-        }
-        #__ds_titlebar .__ds_drag { position: absolute; top: 0; left: 112px; right: 0; height: 12px; -webkit-app-region: drag; pointer-events: auto; }
-         #__ds_titlebar .__ds_traffic { display: flex; gap: 12px; width: 96px; flex: 0 0 96px; margin-left: 4px; pointer-events: auto; -webkit-app-region: no-drag; order: 0; }
-        #__ds_titlebar .__ds_traffic button {
-          width: 12px; height: 12px; border-radius: 50%; border: none; padding: 0;
-          cursor: pointer; display: flex; align-items: center; justify-content: center;
-          font-size: 9px; line-height: 1; color: transparent; font-family: inherit;
-        }
-        #__ds_titlebar .__ds_traffic button:hover { color: rgba(0,0,0,.55); }
-        #__ds_close { background: #ff5f57; }
-        #__ds_min   { background: #febc2e; }
-        #__ds_max   { background: #28c840; }
-
-        html, body { height: 100%; }
-        body { padding-top: 0 !important; box-sizing: border-box !important; }
-        #root { min-height: 100% !important; margin: 0 !important; }
-      `);
-      win.webContents.executeJavaScript(`
-        (function () {
-          if (document.getElementById("__ds_titlebar")) return;
-          var bar = document.createElement("div");
-          bar.id = "__ds_titlebar";
-          bar.innerHTML = '<span class="__ds_traffic">'
-            + '<button id="__ds_close" title="关闭">×</button>'
-            + '<button id="__ds_min" title="最小化">−</button>'
-            + '<button id="__ds_max" title="最大化">+</button>'
-            + '</span>'
-             + '<span class="__ds_drag" aria-hidden="true"></span>';
-          document.body.prepend(bar);
-          document.body.style.paddingTop = "0";
-          document.documentElement.style.setProperty("--dsh-desktop-titlebar-height", "0px");
-          document.getElementById("__ds_close").addEventListener("click", function () { window.dshWin.close(); });
-          document.getElementById("__ds_min").addEventListener("click", function () { window.dshWin.minimize(); });
-          document.getElementById("__ds_max").addEventListener("click", function () { window.dshWin.toggleMaximize(); });
-        })();
-      `).catch(() => {});
-    } catch (e) {}
-  });
-  */
   win.on("close", (e) => {
     if (!quitting && tray) {   // 关窗 = 最小化到托盘
       e.preventDefault();
@@ -528,10 +494,23 @@ if (!gotLock) {
     if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); }
   });
 
-  // macOS 风格红绿灯按钮的窗口控制
+  // 窗口控制（原生标题栏由系统处理；此桥接保留给托盘/快捷键等潜在场景）
   ipcMain.on("win:minimize", () => { if (win) win.minimize(); });
   ipcMain.on("win:toggle-maximize", () => { if (!win) return; if (win.isMaximized()) win.unmaximize(); else win.maximize(); });
   ipcMain.on("win:close", () => { if (win) win.close(); });
+
+  // 原生目录选择：受限桥接，渲染进程只能拿到绝对路径或 null（取消）。
+  // 这是桌面端对 DSH Host picker 的可选适配器；普通浏览器仍走 Host picker。
+  ipcMain.handle("picker:pick-directory", async (_event, opts) => {
+    if (!win || win.isDestroyed()) return null;
+    const title = (opts && typeof opts.title === "string" && opts.title.trim()) || "选择目录";
+    const r = await dialog.showOpenDialog(win, {
+      title,
+      properties: ["openDirectory", "createDirectory"]
+    });
+    if (r.canceled || !Array.isArray(r.filePaths) || r.filePaths.length === 0) return null;
+    return r.filePaths[0];
+  });
 
   app.whenReady().then(async () => {
     log("==== 启动 ====");
