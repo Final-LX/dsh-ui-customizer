@@ -16,16 +16,20 @@
 </p>
 
 <p align="center">
-  <img src="https://blog.lonelybear.cn/content/images/2026/08/show01.png" alt="DSH home — themed" width="860"/>
+  <img src="show01.png" alt="DSH home — themed" width="860"/>
 </p>
 
 <p align="center">
-  <img src="https://blog.lonelybear.cn/content/images/2026/08/show02.png" alt="DIY Theme settings panel" width="860"/>
+  <img src="show02.png" alt="DIY Theme settings panel" width="860"/>
 </p>
 
 <p align="center">
-  <video src="https://blog.lonelybear.cn/content/media/2026/08/videos-1.mp4" controls width="860" poster="https://blog.lonelybear.cn/content/images/2026/08/show01.png"></video>
+  <a href="https://blog.lonelybear.cn/content/media/2026/08/videos-1.mp4" target="_blank" rel="noopener" title="Click to play the demo video">
+    <img src="show01.png" alt="Demo video — click to play" width="860" style="border:1px solid #dfe3e8;border-radius:12px"/>
+  </a>
 </p>
+
+> ▶️ **Demo video:** click the cover above to open and play it in a new tab.
 
 ---
 

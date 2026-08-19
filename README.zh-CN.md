@@ -15,16 +15,20 @@
 </p>
 
 <p align="center">
-  <img src="https://blog.lonelybear.cn/content/images/2026/08/show01.png" alt="DSH 主页 —— 主题效果" width="860"/>
+  <img src="show01.png" alt="DSH 主页 —— 主题效果" width="860"/>
 </p>
 
 <p align="center">
-  <img src="https://blog.lonelybear.cn/content/images/2026/08/show02.png" alt="DIY 主题设置面板" width="860"/>
+  <img src="show02.png" alt="DIY 主题设置面板" width="860"/>
 </p>
 
 <p align="center">
-  <video src="https://blog.lonelybear.cn/content/media/2026/08/videos-1.mp4" controls width="860" poster="https://blog.lonelybear.cn/content/images/2026/08/show01.png"></video>
+  <a href="https://blog.lonelybear.cn/content/media/2026/08/videos-1.mp4" target="_blank" rel="noopener" title="点击播放演示视频">
+    <img src="show01.png" alt="演示视频 —— 点击播放" width="860" style="border:1px solid #dfe3e8;border-radius:12px"/>
+  </a>
 </p>
+
+> ▶️ **演示视频：** 点击上方封面图，在新标签页打开播放。
 
 ---
 
