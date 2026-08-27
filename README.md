@@ -87,36 +87,37 @@ The script copies the plugin into `~\.dsh\profiles\web\node_modules\dsh-ui-custo
 > powershell -ExecutionPolicy Bypass -File .\install-web.ps1
 > ```
 
-### Option B — DSH plugin command (git + pnpm available)
+### Option B — DSH plugin command (standard bundle, recommended)
+
+> Since **v1.1.0** this plugin declares `dsh.bundle`, making it a standard bundle
+> layer: `dsh plugin add` automatically appends it to `dsh.profile.bundles` and
+> applies its own loader patch — **no manual `cordis.patch.yml` edit is needed**,
+> and updates use the same command.
 
 ```powershell
-dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
+dsh plugin --profile web add dsh-ui-customizer@latest
 ```
 
 If `dsh` is not on your PATH:
 
 ```powershell
-npx @deepseek-ai/dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
+npx @deepseek-ai/dsh plugin --profile web add dsh-ui-customizer@latest
 ```
 
-`dsh plugin add` only installs the dependency — this plugin is a classic bundle
-(activated via a loader row, not `dsh.bundle`), so you **must** register the loader
-manually for it to appear. Edit:
-
-```text
-%USERPROFILE%\.dsh\profiles\web\cordis.patch.yml
-```
-
-Make sure it contains:
-
-```yaml
-- insert:
-    - id: ui-customizer
-      name: dsh-ui-customizer
-```
+(Once published to npm, install straight from the registry; you can also use
+`git+https://github.com/Final-LX/dsh-ui-customizer` for the git version.)
 
 Then **fully restart** DSH Web (`npx @deepseek-ai/dsh web`) and refresh the page.
-If you only run `dsh plugin add` without the loader row, the panel will not show up.
+
+Later, update to the newest version:
+
+```powershell
+dsh plugin --profile web update dsh-ui-customizer@latest
+```
+
+> Note: v1.0.0 and earlier were a classic bundle — `dsh plugin add` only installed
+> the dependency and you had to register the loader row manually in
+> `cordis.patch.yml`; v1.1.0 no longer requires that.
 
 ## 🤖 Install via AI (copy & paste)
 
@@ -130,15 +131,12 @@ Help me install the dsh-ui-customizer theme plugin into my DeepSeek Harness (DSH
 Steps:
 1. Make sure I have Node.js (with npx).
 2. Start DSH Web with: npx @deepseek-ai/dsh web  (this initializes the "web" profile on first run).
-3. Install the plugin from git:  npx @deepseek-ai/dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
-4. This plugin is a classic bundle (no dsh.bundle), so dsh plugin add will NOT activate it on its own.
-   Open %USERPROFILE%\.dsh\profiles\web\cordis.patch.yml and make sure it contains:
-     - insert:
-         - id: ui-customizer
-           name: dsh-ui-customizer
-5. Fully restart DSH Web (stop and run "npx @deepseek-ai/dsh web" again), then refresh the browser.
-6. Open Settings -> DIY Theme to confirm the panel appears.
-If anything fails, show me the error and the contents of cordis.patch.yml, and tell me how to fix it.
+3. Install the plugin from npm (since v1.1.0 it is a standard bundle: dsh plugin wires it
+   into dsh.profile.bundles automatically, no manual config edit needed):
+   npx @deepseek-ai/dsh plugin --profile web add dsh-ui-customizer@latest
+4. Fully restart DSH Web (stop and run "npx @deepseek-ai/dsh web" again), then refresh the browser.
+5. Open Settings -> DIY Theme to confirm the panel appears.
+If anything fails, show me the error and tell me how to fix it.
 ```
 
 **中文提示词：**
@@ -148,15 +146,11 @@ If anything fails, show me the error and the contents of cordis.patch.yml, and t
 步骤：
 1. 确认本机已装 Node.js（含 npx）。
 2. 启动 DSH Web：npx @deepseek-ai/dsh web（首次运行会初始化 web profile）。
-3. 从 git 安装插件：npx @deepseek-ai/dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
-4. 本插件是 classic bundle（没有 dsh.bundle），dsh plugin add 不会自动激活它。
-   打开 %USERPROFILE%\.dsh\profiles\web\cordis.patch.yml，确认包含：
-     - insert:
-         - id: ui-customizer
-           name: dsh-ui-customizer
-5. 完全重启 DSH Web（先停掉，再跑 npx @deepseek-ai/dsh web），然后刷新浏览器。
-6. 打开「设置 -> DIY 主题」确认面板出现。
-如果失败，把报错和 cordis.patch.yml 的内容给我看，并告诉我怎么修。
+3. 从 npm 安装插件（v1.1.0 起是标准 bundle，会自动进 dsh.profile.bundles，无需手动改配置）：
+   npx @deepseek-ai/dsh plugin --profile web add dsh-ui-customizer@latest
+4. 完全重启 DSH Web（先停掉，再跑 npx @deepseek-ai/dsh web），然后刷新浏览器。
+5. 打开「设置 -> DIY 主题」确认面板出现。
+如果失败，把报错给我看，并告诉我怎么修。
 ```
 
 ## 🖼️ First run & how the panel works
@@ -187,7 +181,7 @@ Not directly — schemes are stored locally. You can `Export`… (via your brows
 
 | Symptom | Likely cause / fix |
 |---|---|
-| Panel missing after install | DSH not fully restarted, or the loader row is missing in `cordis.patch.yml`. Restart `dsh web` after editing, then refresh. |
+| Panel missing after install | DSH not fully restarted. Restart `dsh web`, then refresh. (v1.1.0+ is a standard bundle; a missing panel means the bundle patch did not apply — check that `dsh-ui-customizer` is in `dsh.profile.bundles`.) |
 | Theme applies but some colors look off | Official tokens changed across DSH versions. `npm test` (which runs `tools/test-tokens.cjs`) will surface the mismatch; file an issue with the listed tokens. |
 | Heavy blur / large images feel slow | Lower panel translucency / glass strength, or use a smaller background image. |
 | Background URL doesn't load | Check the URL scheme (`http(s)` only), and the remote server's CORS / Referrer policy. |
@@ -196,11 +190,11 @@ Not directly — schemes are stored locally. You can `Export`… (via your brows
 
 ```text
 dsh-ui-customizer/
-├── lib/client.js                 # browser-side classic bundle (theme logic + settings UI)
+├── lib/client.js                 # browser-side plugin (theme logic + settings UI)
 ├── lib/index.js                  # host-side entry (no-op for this browser-only plugin)
-├── package.json                  # plugin metadata + dsh.client config
+├── cordis.patch.yml              # bundle loader patch (v1.1.0+, auto-mounted)
+├── package.json                  # plugin metadata + dsh.bundle/dsh.client config
 ├── tools/                        # tests
-├── docs/                         # screenshots & introduction
 ├── install-web.ps1               # Node.js-only web install script
 └── README.md                     # this file (+ other languages)
 ```
@@ -215,6 +209,7 @@ which runs `test-client`, `test-render`, `test-idb`, and `test-tokens`. The last
 
 Key plugin contracts:
 
+- `package.json` declares `dsh.bundle.patch: "./cordis.patch.yml"` — that makes the plugin a **standard bundle**: `dsh plugin add` appends it to `dsh.profile.bundles` and auto-applies its loader patch (`- insert: - id: ui-customizer`), so no manual profile `cordis.patch.yml` edit is needed, and `dsh plugin update` can upgrade it directly.
 - `package.json` must export `./package.json` so DSH can read `dsh.client`.
 - The client bundle registers via `window.__ModuleLoader__.load({...})`.
 - `dsh.client` declares `platform: "web"`, `immediately: true` and the `inject` services.

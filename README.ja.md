@@ -86,34 +86,35 @@
 > powershell -ExecutionPolicy Bypass -File .\install-web.ps1
 > ```
 
-### 方法 B：DSH プラグインコマンド（git・pnpm がある場合）
+### 方法 B：DSH プラグインコマンド（標準 bundle、推奨）
+
+> **v1.1.0** 以降、このプラグインは `dsh.bundle` を宣言した標準 bundle です：
+> `dsh plugin add` が自動で `dsh.profile.bundles` に追加し、付属の loader パッチを
+> 適用するため、**`cordis.patch.yml` の手動編集は不要**です。更新も同じコマンドです。
 
 ```powershell
-dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
+dsh plugin --profile web add dsh-ui-customizer@latest
 ```
 
 `dsh` が PATH にない場合：
 
 ```powershell
-npx @deepseek-ai/dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
+npx @deepseek-ai/dsh plugin --profile web add dsh-ui-customizer@latest
 ```
 
-`dsh plugin add` は依存関係のインストールのみを行います — このプラグインは classic bundle（`dsh.bundle` ではなく loader 行で有効化）のため、有効にするには**手動で loader を登録する必要があります**。次を編集：
-
-```text
-%USERPROFILE%\.dsh\profiles\web\cordis.patch.yml
-```
-
-次の行が含まれていることを確認します：
-
-```yaml
-- insert:
-    - id: ui-customizer
-      name: dsh-ui-customizer
-```
+（npm に公開後はレジストリから直接インストールできます。git 版は
+`git+https://github.com/Final-LX/dsh-ui-customizer` を指定します。）
 
 その後、DSH Web を**完全に再起動**（`npx @deepseek-ai/dsh web`）し、ページを再読み込みします。
-`dsh plugin add` だけ実行して loader 行を追加しないと、パネルは表示されません。
+
+以後、最新版への更新：
+
+```powershell
+dsh plugin --profile web update dsh-ui-customizer@latest
+```
+
+> 注：v1.0.0 以前は classic bundle のため、`dsh plugin add` は依存のインストールのみで、
+> `cordis.patch.yml` に手動で loader 行を登録する必要がありました。v1.1.0 以降は不要です。
 
 ## 🤖 AI にインストールさせる（コピー＆ペースト）
 
@@ -126,15 +127,12 @@ Help me install the dsh-ui-customizer theme plugin into my DeepSeek Harness (DSH
 Steps:
 1. Make sure I have Node.js (with npx).
 2. Start DSH Web with: npx @deepseek-ai/dsh web  (this initializes the "web" profile on first run).
-3. Install the plugin from git:  npx @deepseek-ai/dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
-4. This plugin is a classic bundle (no dsh.bundle), so dsh plugin add will NOT activate it on its own.
-   Open %USERPROFILE%\.dsh\profiles\web\cordis.patch.yml and make sure it contains:
-     - insert:
-         - id: ui-customizer
-           name: dsh-ui-customizer
-5. Fully restart DSH Web (stop and run "npx @deepseek-ai/dsh web" again), then refresh the browser.
-6. Open Settings -> DIY Theme to confirm the panel appears.
-If anything fails, show me the error and the contents of cordis.patch.yml, and tell me how to fix it.
+3. Install the plugin from npm (since v1.1.0 it is a standard bundle: dsh plugin wires it
+   into dsh.profile.bundles automatically, no manual config edit needed):
+   npx @deepseek-ai/dsh plugin --profile web add dsh-ui-customizer@latest
+4. Fully restart DSH Web (stop and run "npx @deepseek-ai/dsh web" again), then refresh the browser.
+5. Open Settings -> DIY Theme to confirm the panel appears.
+If anything fails, show me the error and tell me how to fix it.
 ```
 
 **中文提示詞：**
@@ -144,15 +142,11 @@ If anything fails, show me the error and the contents of cordis.patch.yml, and t
 步驟：
 1. 確認本機已裝 Node.js（含 npx）。
 2. 啟動 DSH Web：npx @deepseek-ai/dsh web（首次執行會初始化 web profile）。
-3. 從 git 安裝外掛：npx @deepseek-ai/dsh plugin --profile web add "git+https://github.com/Final-LX/dsh-ui-customizer"
-4. 本外掛是 classic bundle（沒有 dsh.bundle），dsh plugin add 不會自動啟用它。
-   開啟 %USERPROFILE%\.dsh\profiles\web\cordis.patch.yml，確認包含：
-     - insert:
-         - id: ui-customizer
-           name: dsh-ui-customizer
-5. 完全重新啟動 DSH Web（先停掉，再跑 npx @deepseek-ai/dsh web），然後重新整理瀏覽器。
-6. 開啟「設定 -> DIY 主題」確認面板出現。
-如果失敗，把報錯和 cordis.patch.yml 的內容給我看，並告訴我怎麼修。
+3. 從 npm 安裝外掛（v1.1.0 起是標準 bundle，會自動進 dsh.profile.bundles，無需手動改配置）：
+   npx @deepseek-ai/dsh plugin --profile web add dsh-ui-customizer@latest
+4. 完全重新啟動 DSH Web（先停掉，再跑 npx @deepseek-ai/dsh web），然後重新整理瀏覽器。
+5. 開啟「設定 -> DIY 主題」確認面板出現。
+如果失敗，把報錯給我看，並告訴我怎麼修。
 ```
 
 ## 🖼️ 初回利用とパネルの操作
@@ -183,7 +177,7 @@ If anything fails, show me the error and the contents of cordis.patch.yml, and t
 
 | 症状 | 考えられる原因 / 対処 |
 |---|---|
-| インストール後にパネルが見つからない | DSH が完全に再起動されていない、または `cordis.patch.yml` に loader 行がない。編集後に `dsh web` を再起動して再読み込み。 |
+| インストール後にパネルが見つからない | DSH が完全に再起動されていない。`dsh web` を再起動して再読み込み。（v1.1.0+ は標準 bundle のため、パネルが出ない場合は bundle パッチが適用されていない — `dsh.profile.bundles` に `dsh-ui-customizer` があるか確認。） |
 | テーマは反映されるが一部の色がおかしい | 公式トークンがバージョン間で変化。`npm test`（`tools/test-tokens.cjs` を含む）で欠落を検出できるので、列挙されたトークンを報告。 |
 | ぼかし / 大きな画像で動作が重い | パネルの透明度 / ガラス強度を下げるか、より小さい背景画像を使う。 |
 | 背景 URL が読み込めない | スキーム（`http(s)` のみ）と、リモートサーバーの CORS / Referrer 設定を確認。 |
@@ -192,11 +186,11 @@ If anything fails, show me the error and the contents of cordis.patch.yml, and t
 
 ```text
 dsh-ui-customizer/
-├── lib/client.js                 # ブラウザ側 classic bundle（テーマロジック + 設定 UI）
+├── lib/client.js                 # ブラウザ側プラグイン（テーマロジック + 設定 UI）
 ├── lib/index.js                  # ホスト側エントリ（ブラウザ専用プラグインのため no-op）
-├── package.json                  # プラグインメタデータ + dsh.client 設定
+├── cordis.patch.yml              # bundle 付属の loader パッチ（v1.1.0+、自動マウント）
+├── package.json                  # プラグインメタデータ + dsh.bundle/dsh.client 設定
 ├── tools/                        # テスト
-├── docs/                         # スクリーンショット・紹介記事
 ├── install-web.ps1               # Node.js のみで動く Web インストールスクリプト
 └── README.md                     # 本ドキュメント（他言語版を含む）
 ```
@@ -211,6 +205,7 @@ npm test
 
 主要なプラグイン契約：
 
+- `package.json` が `dsh.bundle.patch: "./cordis.patch.yml"` を宣言 → プラグインは**標準 bundle** になります：`dsh plugin add` が `dsh.profile.bundles` に追加し、付属の loader パッチ（`- insert: - id: ui-customizer`）を自動適用するため、profile の `cordis.patch.yml` 手動編集は不要、`dsh plugin update` で直接更新できます。
 - DSH が `dsh.client` を読めるよう、`package.json` は `./package.json` をエクスポートする必要があります。
 - クライアント bundle は `window.__ModuleLoader__.load({...})` で登録します。
 - `dsh.client` は `platform: "web"`・`immediately: true`・必要な `inject` サービスを宣言します。

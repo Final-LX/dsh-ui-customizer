@@ -1,0 +1,15 @@
+# dsh-ui-customizer bundle patch — applied automatically when the package is
+# installed with `dsh plugin --profile <name> add dsh-ui-customizer`.
+#
+# Because this package declares `dsh.bundle.patch`, `dsh plugin` treats it as a
+# standard bundle layer: it is appended to `dsh.profile.bundles` on install,
+# and its patch below inserts the loader row into the composition root. No
+# manual `cordis.patch.yml` edit in the profile is needed for the npm/git
+# install path.
+#
+# The user's own profile cordis.patch.yml is applied AFTER bundle layers and
+# wins per row, so every row here can still be overridden there.
+
+- insert:
+    - id: ui-customizer
+      name: dsh-ui-customizer

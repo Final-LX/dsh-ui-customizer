@@ -1,11 +1,23 @@
 {
   "name": "dsh-ui-customizer",
-  "version": "1.0.0",
-  "private": true,
+  "version": "1.1.0",
   "description": "Full DIY theme plugin for DSH web: color palettes, fonts, background image (upload/URL), glassmorphism, border radius.",
   "type": "module",
   "main": "lib/index.js",
   "license": "MIT",
+  "author": "Final-LX",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Final-LX/dsh-ui-customizer.git"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "theme",
+    "diy",
+    "customizer"
+  ],
   "exports": {
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
@@ -13,6 +25,7 @@
   },
   "files": [
     "lib",
+    "cordis.patch.yml",
     "README.*",
     "LICENSE"
   ],
@@ -20,6 +33,9 @@
     "test": "node tools/test-client.cjs && node tools/test-render.cjs && node tools/test-idb.cjs && node tools/test-tokens.cjs"
   },
   "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
     "client": {
       "platform": "web",
       "immediately": true,
